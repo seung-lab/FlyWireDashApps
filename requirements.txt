@@ -1,2 +1,8 @@
 numpy
 caveclient
+cloudvolume
+pandas
+plotly
+nglui
+annotationframeworkclient
+dash
