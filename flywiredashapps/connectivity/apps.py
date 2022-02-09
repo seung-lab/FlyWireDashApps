@@ -1,69 +1,127 @@
 # Example module for code specific to apps
 
 from dash import Dash, dcc, html, Input, Output, State, dash_table
+import dash_bootstrap_components as dbc
 from nglui.statebuilder import *
 import time
 from utils import *
 
 # defines blank app object #
-app = Dash(__name__)
+app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # defines layout of various app elements #
 app.layout = html.Div(
     [
         # defines text area for instructions and feedback#
-        dcc.Textarea(
+        dbc.Textarea(
             id="message_text",
             value=(
-                'Input root/nuc ID or coordinates and click "Submit" button.\n'
-                + "Only one entry at a time.\n"
-                + "Large queries (>100k synapses) may take up to 2 minutes."
+                'Input root/nuc ID or coordinates and click "Submit" button.'
+                + " Only one entry at a time."
+                + " Large queries (>100k synapses) may take up to 2 minutes."
             ),
-            style={"width": "450px", "resize": "none",},
-            rows=3,
             disabled=True,
-        ),
-        # defines input field#
-        html.Div(
-            dcc.Input(
-                id="input_field", type="text", placeholder="Root/Nuc ID or Coordinates",
-            )
-        ),
-        html.Br(),
-        # defines message explaining cleft score field #
-        dcc.Textarea(
-            id="cleft_message_text",
-            value="Cleft score threshold for synapses:",
-            style={"width": "260px", "resize": "none",},
             rows=1,
-            disabled=True,
+            style={
+                # "width": "420px",
+                "resize": "none",
+            },
         ),
-        # defines input field for cleft score threshold #
-        html.Div(dcc.Input(id="cleft_thresh_field", type="number", value=50,),),
         html.Br(),
-        # # defines validation checkbox (CURRENTLY BROKEN)#
-        # html.Div(
-        #     dcc.Checklist(
-        #         id="val_check",
-        #         options=[{"label": "Data Validation", "value": True,}],
-        #         labelStyle={"display": "block"},
-        #     )
-        # ),
-        # defines submission button #
-        html.Button(
+        html.Div(
+            children=[
+                # defines input message
+                dcc.Textarea(
+                    id="input_message_text",
+                    value="Root/nucleus ID or x,y,z coords:",
+                    style={
+                        "width": "230px",
+                        "resize": "none",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                    rows=1,
+                    disabled=True,
+                ),
+                # defines input field #
+                dcc.Input(
+                    id="input_field",
+                    type="text",
+                    placeholder="Root/Nuc ID or Coords",
+                    style={
+                        "width": "190px",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                ),
+            ],
+            style={"margin-left": "5px",},
+        ),
+        # defines cleft score message and field #
+        html.Div(
+            children=[
+                # defines cleft score message #
+                dcc.Textarea(
+                    id="cleft_message_text",
+                    value="Cleft score threshold for synapses (default 50):",
+                    style={
+                        "width": "355px",
+                        "resize": "none",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                    rows=1,
+                    disabled=True,
+                ),
+                # defines input field for cleft score threshold #
+                dcc.Input(
+                    id="cleft_thresh_field",
+                    type="number",
+                    value=50,
+                    style={
+                        "display": "inline-block",
+                        "width": "65px",
+                        "vertical-align": "top",
+                    },
+                ),
+            ],
+            style={"margin-left": "5px", "margin-top": "5px",},
+        ),
+        # defines sumbission button #
+        dbc.Button(
             "Submit",
             id="submit_button",
             n_clicks=0,
-            style={"margin-top": "0px", "margin-bottom": "5px",},
+            style={
+                # "display": "inline-block",
+                # "vertical-align": "top",
+                #     "height": "90px",
+                "width": "420px",
+                "margin-left": "5px",
+                "margin-top": "5px",
+                "margin-bottom": "5px",
+            },
+        ),
+        html.Br(),
+        dcc.Loading(
+            id="loading_bar", type="default", children=html.Div(id="loading-output-1")
         ),
         html.Br(),
         # defines neurotransmitter plot display div #
-        html.Div(id="graph_div", children=[], style={"display": "inline-block"},),
+        html.Div(
+            id="graph_div",
+            children=[],
+            style={
+                "display": "inline-block",
+                "margin-top": "10px",
+                "margin-bottom": "10px",
+            },
+        ),
         html.Br(),
         # defines link generation button #
         html.Div(
             children=[
-                html.Button(
+                dbc.Button(
                     "Generate NG Link Using Selected Partners",
                     id="link_button",
                     n_clicks=0,
@@ -78,7 +136,7 @@ app.layout = html.Div(
             style={"display": "inline-block"},
         ),
         html.Br(),
-        html.Button(
+        dbc.Button(
             "Clear Partner Selections",
             id="clear_button",
             n_clicks=0,
@@ -175,7 +233,7 @@ def update_output(n_clicks, query_id, cleft_thresh):
                 dcc.Graph(id="outgoing_figure", figure=down_violin,),
                 style={"display": "inline-block",},
             ),
-            html.Br(),
+            # html.Br(),
             html.Div(
                 dcc.Graph(id="in_pie_chart", figure=up_pie,),
                 style={"display": "inline-block",},
@@ -191,16 +249,13 @@ def update_output(n_clicks, query_id, cleft_thresh):
 
         # relays time information #
         message_text = (
-            "Connectivity query complete. \n"
-            + "Time: "
+            "Connectivity query completed in "
             + elapsed_time
-            + " seconds\n\n"
+            + " seconds. \n"
             + sum_list[1]
         )
 
-        message_rows = message_text.count("\n") + 1
-
-        print(message_rows)
+        message_rows = message_text.count("\n")
 
         return [
             sum_cols,
@@ -258,11 +313,11 @@ def makeLink(n_clicks, up_id, down_id, query_data, up_data, down_data, cleft_thr
     if up_id is None:
         up_out = 0
     else:
-        up_out = up_data[up_id["row"]]["Partner ID"]
+        up_out = up_data[up_id["row"]]["Upstream Partner ID"]
     if down_id is None:
         down_out = 0
     else:
-        down_out = down_data[down_id["row"]]["Partner ID"]
+        down_out = down_data[down_id["row"]]["Downstream Partner ID"]
 
     nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 

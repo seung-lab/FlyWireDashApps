@@ -1,8 +1,9 @@
 numpy
 caveclient
-cloudvolume
+cloud-volume
 pandas
 plotly
 nglui
 annotationframeworkclient
 dash
+dash_bootstrap_components
