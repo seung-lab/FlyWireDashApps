@@ -1,12 +1,11 @@
-# Example module for code specific to apps
-
+# Connectivity App #
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 import dash_bootstrap_components as dbc
 from nglui.statebuilder import *
 import time
 from utils import *
 
-# defines blank app object #
+# defines blank app object and uses stylesheet for bootstrap themes #
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # defines layout of various app elements #
@@ -28,9 +27,10 @@ app.layout = html.Div(
             },
         ),
         html.Br(),
+        # defines container for input message and field #
         html.Div(
             children=[
-                # defines input message
+                # defines input message #
                 dcc.Textarea(
                     id="input_message_text",
                     value="Root/nucleus ID or x,y,z coords:",
@@ -57,7 +57,7 @@ app.layout = html.Div(
             ],
             style={"margin-left": "5px",},
         ),
-        # defines cleft score message and field #
+        # defines container for cleft score message and field #
         html.Div(
             children=[
                 # defines cleft score message #
@@ -89,22 +89,21 @@ app.layout = html.Div(
         ),
         # defines sumbission button #
         dbc.Button(
-            "Submit",
+            children=["Submit",],
             id="submit_button",
             n_clicks=0,
             style={
-                # "display": "inline-block",
-                # "vertical-align": "top",
-                #     "height": "90px",
+                "display": "inline-block",
                 "width": "420px",
                 "margin-left": "5px",
                 "margin-top": "5px",
                 "margin-bottom": "5px",
             },
         ),
-        html.Br(),
-        dcc.Loading(
-            id="loading_bar", type="default", children=html.Div(id="loading-output-1")
+        # defines submit button loader #
+        html.Div(
+            dcc.Loading(id="submit_loader", type="default", children=""),
+            style={"width": "1000px",},
         ),
         html.Br(),
         # defines neurotransmitter plot display div #
@@ -135,7 +134,12 @@ app.layout = html.Div(
             ],
             style={"display": "inline-block"},
         ),
-        html.Br(),
+        # defines link button loader #
+        html.Div(
+            dcc.Loading(id="link_loader", type="default", children=""),
+            style={"width": "1000px",},
+        ),
+        #defines button to create NG link #
         dbc.Button(
             "Clear Partner Selections",
             id="clear_button",
@@ -143,11 +147,7 @@ app.layout = html.Div(
             style={"margin-top": "5px", "margin-bottom": "15px"},
         ),
         # defines summary table#
-        html.Div(
-            dash_table.DataTable(
-                id="summary_table", fill_width=False, export_format="csv",
-            )
-        ),
+        html.Div(dash_table.DataTable(id="summary_table", export_format="csv",)),
         html.Br(),
         # defines incoming table#
         html.Div(
@@ -172,6 +172,7 @@ app.layout = html.Div(
     Output("graph_div", "children"),
     Output("message_text", "value"),
     Output("message_text", "rows"),
+    Output("submit_loader", "children"),
     Input("submit_button", "n_clicks"),
     State("input_field", "value"),
     State("cleft_thresh_field", "value"),
@@ -267,6 +268,7 @@ def update_output(n_clicks, query_id, cleft_thresh):
             figs,
             message_text,
             message_rows,
+            "",
         ]
 
     # returns error message if 1-item threshold is exceeded #
@@ -280,12 +282,14 @@ def update_output(n_clicks, query_id, cleft_thresh):
             0,
             "",
             "Please limit each query to one entry.",
+            "",
         ]
 
 
 # defines callback that generates neuroglancer link #
 @app.callback(
     Output("ng_link", "href",),
+    Output("link_loader", "children",),
     Input("link_button", "n_clicks",),
     State("incoming_table", "active_cell",),
     State("outgoing_table", "active_cell",),
@@ -323,7 +327,7 @@ def makeLink(n_clicks, up_id, down_id, query_data, up_data, down_data, cleft_thr
 
     out_url = buildLink([query_out], [up_out], [down_out], cleft_thresh, nuc)
 
-    return out_url
+    return [out_url, ""]
 
 
 # defines callback that clears table selections #
