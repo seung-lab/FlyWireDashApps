@@ -593,10 +593,10 @@ def makeViolin(root_id, cleft_thresh, incoming=False):
 
     # sets variable for incoming or outgoing synapses
     if incoming == False:
-        query_df = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)[0]
         title_name = "Outgoing Synapse NT Scores"
     elif incoming == True:
-        query_df = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)[0]
         title_name = "Incoming Synapse NT Scores"
 
     # rounds data to 2 decimal places #
