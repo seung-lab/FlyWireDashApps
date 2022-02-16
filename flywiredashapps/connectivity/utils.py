@@ -179,7 +179,7 @@ def getNuc(root_id):
     out_df = pd.DataFrame(
         {
             "Root ID": list(nuc_df["pt_root_id"]),
-            "Nucleus ID": list(nuc_df["id"]),
+            "Nuc ID": list(nuc_df["id"]),
             "Nucleus Coordinates": list(nuc_df["pt_position"]),
         }
     )
@@ -536,7 +536,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh):
     # exception handling for segments without nuclei #
     if nuc_df.empty:
         nuc_df = pd.DataFrame(
-            {"Root ID": root_id, "Nucleus ID": "n/a", "Nucleus Coordinates": "n/a",},
+            {"Root ID": root_id, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
             index=[0],
         ).astype(str)
 

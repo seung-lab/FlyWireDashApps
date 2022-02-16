@@ -117,60 +117,32 @@ app.layout = html.Div(
             },
         ),
         html.Br(),
-        # defines summary table with download button #
-        dbc.Button("Download Summary Table as CSV File", id="summary_download_button"),
-        dcc.Download(id="summary_download"),
-        html.Div(dash_table.DataTable(id="summary_table",)),
-        html.Br(),
-        # defines incoming table with download button #
-        dbc.Button(
-            "Download Upstream Partner Table as CSV File", id="upstream_download_button"
+        # defines summary table #
+        html.Div(
+            dash_table.DataTable(
+                id="summary_table",
+                style_header={
+                    "whiteSpace": "normal",
+                    "height": "auto",
+                    "textAlign": "center",
+                },
+            )
         ),
-        dcc.Download(id="upstream_download"),
+        html.Br(),
+        # defines incoming table #
         html.Div(dash_table.DataTable(id="incoming_table", page_size=5,)),
         html.Br(),
-        # defines outgoing table with download button #
-        dbc.Button(
-            "Download Downstream Partner Table as CSV File",
-            id="downstream_download_button",
-        ),
-        dcc.Download(id="downstream_download"),
+        # defines outgoing table #
         html.Div(dash_table.DataTable(id="outgoing_table", page_size=5)),
         html.Br(),
-        # defines link generation button #
-        html.Div(
-            children=[
-                dbc.Button(
-                    "Generate NG Link Using Selected Partners",
-                    id="link_button",
-                    n_clicks=0,
-                    style={"margin-top": "15px", "margin-right": "15px",},
-                ),
-                dcc.Link(
-                    href="",
-                    id="ng_link",
-                    style={"margin-top": "15px", "margin-bottom": "15px",},
-                ),
-            ],
-            style={"display": "inline-block"},
-        ),
-        # defines link button loader #
-        html.Div(
-            dcc.Loading(id="link_loader", type="default", children=""),
-            style={"width": "1000px",},
-        ),
-        # defines button to clear table selections #
-        dbc.Button(
-            "Clear Partner Selections",
-            id="clear_button",
-            n_clicks=0,
-            style={"margin-top": "5px", "margin-bottom": "15px"},
-        ),
+        # defines div for holding post-submission buttons #
+        html.Div(children=[], id="post_submit_div"),
     ]
 )
 
 # defines callback that generates main tables and violin plots #
 @app.callback(
+    Output("post_submit_div", "children"),
     Output("summary_table", "columns"),
     Output("summary_table", "data"),
     Output("incoming_table", "columns"),
@@ -195,6 +167,101 @@ def update_output(n_clicks, query_id, cleft_thresh):
     cleft_thresh -- float value of cleft score threshold
     val_choice -- boolean option to validate synapse counts
     """
+
+    post_div = [
+        # defines summary downloader #
+        html.Div(
+            [
+                dbc.Button(
+                    "Download Summary Table as CSV File",
+                    id="summary_download_button",
+                    style={
+                        "width": "420px",
+                        "margin-right": "5px",
+                        "margin-left": "5px",
+                        "margin-top": "5px",
+                        "margin-bottom": "5px",
+                    },
+                ),
+            ]
+        ),
+        dcc.Download(id="summary_download"),
+        # defines upstream downloader #
+        html.Div(
+            [
+                dbc.Button(
+                    "Download Upstream Partner Table as CSV File",
+                    id="upstream_download_button",
+                    style={
+                        "width": "420px",
+                        "margin-right": "5px",
+                        "margin-left": "5px",
+                        "margin-top": "5px",
+                        "margin-bottom": "5px",
+                    },
+                ),
+            ]
+        ),
+        dcc.Download(id="upstream_download"),
+        # defines downstream downloader #
+        html.Div(
+            [
+                dbc.Button(
+                    "Download Downstream Partner Table as CSV File",
+                    id="downstream_download_button",
+                    style={
+                        "width": "420px",
+                        "margin-right": "5px",
+                        "margin-left": "5px",
+                        "margin-top": "5px",
+                        "margin-bottom": "5px",
+                    },
+                ),
+            ]
+        ),
+        dcc.Download(id="downstream_download"),
+        # defines button to clear table selections #
+        dbc.Button(
+            "Clear Partner Selections",
+            id="clear_button",
+            n_clicks=0,
+            color="danger",
+            style={
+                "width": "420px",
+                "margin-right": "5px",
+                "margin-left": "5px",
+                "margin-top": "25px",
+                "margin-bottom": "5px",
+            },
+        ),
+        # defines link generation button #
+        html.Div(
+            children=[
+                dbc.Button(
+                    "Generate NG Link Using Selected Partners",
+                    id="link_button",
+                    n_clicks=0,
+                    style={
+                        "margin-top": "5px",
+                        "margin-right": "5px",
+                        "margin-left": "5px",
+                        "margin-bottom": "5px",
+                        "width": "420px",
+                    },
+                ),
+                dcc.Link(
+                    href="",
+                    id="ng_link",
+                    style={"margin-top": "15px", "margin-bottom": "15px",},
+                ),
+            ],
+        ),
+        # defines link button loader #
+        html.Div(
+            dcc.Loading(id="link_loader", type="default", children=""),
+            style={"margin-right": "5px", "margin-left": "5px", "width": "1000px",},
+        ),
+    ]
 
     start_time = time.time()
 
@@ -267,6 +334,7 @@ def update_output(n_clicks, query_id, cleft_thresh):
         message_rows = message_text.count("\n")
 
         return [
+            post_div,
             sum_cols,
             sum_data,
             up_cols,
@@ -282,6 +350,7 @@ def update_output(n_clicks, query_id, cleft_thresh):
     # returns error message if 1-item threshold is exceeded #
     else:
         return [
+            "",
             0,
             0,
             0,
