@@ -117,6 +117,26 @@ app.layout = html.Div(
             },
         ),
         html.Br(),
+        # defines summary table with download button #
+        dbc.Button("Download Summary Table as CSV File", id="summary_download_button"),
+        dcc.Download(id="summary_download"),
+        html.Div(dash_table.DataTable(id="summary_table",)),
+        html.Br(),
+        # defines incoming table with download button #
+        dbc.Button(
+            "Download Upstream Partner Table as CSV File", id="upstream_download_button"
+        ),
+        dcc.Download(id="upstream_download"),
+        html.Div(dash_table.DataTable(id="incoming_table", page_size=5,)),
+        html.Br(),
+        # defines outgoing table with download button #
+        dbc.Button(
+            "Download Downstream Partner Table as CSV File",
+            id="downstream_download_button",
+        ),
+        dcc.Download(id="downstream_download"),
+        html.Div(dash_table.DataTable(id="outgoing_table", page_size=5)),
+        html.Br(),
         # defines link generation button #
         html.Div(
             children=[
@@ -139,24 +159,12 @@ app.layout = html.Div(
             dcc.Loading(id="link_loader", type="default", children=""),
             style={"width": "1000px",},
         ),
-        #defines button to create NG link #
+        # defines button to clear table selections #
         dbc.Button(
             "Clear Partner Selections",
             id="clear_button",
             n_clicks=0,
             style={"margin-top": "5px", "margin-bottom": "15px"},
-        ),
-        # defines summary table#
-        html.Div(dash_table.DataTable(id="summary_table", export_format="csv",)),
-        html.Br(),
-        # defines incoming table#
-        html.Div(
-            dash_table.DataTable(id="incoming_table", export_format="csv", page_size=5,)
-        ),
-        html.Br(),
-        # defines outgoing table#
-        html.Div(
-            dash_table.DataTable(id="outgoing_table", export_format="csv", page_size=5)
         ),
     ]
 )
@@ -353,6 +361,44 @@ def clearSelected(n_clicks):
     ]
 
 
-# runs program, may be able to chooses server by using port= argument? #
+# defines callback to download summary table as csv on button press #
+@app.callback(
+    Output("summary_download", "data"),
+    Input("summary_download_button", "n_clicks"),
+    State("summary_table", "data"),
+    prevent_initial_call=True,
+)
+def downloadSummary(n_clicks, table_data):
+    summary_df = pd.DataFrame(table_data)
+    return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
+
+
+# defines callback to download upstream table as csv on button press #
+@app.callback(
+    Output("upstream_download", "data"),
+    Input("upstream_download_button", "n_clicks"),
+    State("incoming_table", "data"),
+    prevent_initial_call=True,
+)
+def downloadUpstream(n_clicks, table_data):
+    upstream_df = pd.DataFrame(table_data)
+    return dcc.send_data_frame(upstream_df.to_csv, "upstream_table.csv")
+
+
+# defines callback to download downstream table as csv on button press #
+@app.callback(
+    Output("downstream_download", "data"),
+    Input("downstream_download_button", "n_clicks"),
+    State("outgoing_table", "data"),
+    prevent_initial_call=True,
+)
+def downloadDownstream(n_clicks, table_data):
+
+    downstream_df = pd.DataFrame(table_data)
+    downstream_df.head()
+    return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
+
+
+# runs program, may be able to choose server by using port= argument? #
 if __name__ == "__main__":
     app.run_server()
