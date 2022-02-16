@@ -397,28 +397,33 @@ def makePie(root_id, cleft_thresh, incoming=False):
     ratios_df.loc[ratios_df["Ratio"] < 0.01, "Neuropil"] = "Other"
 
     np_color_dict = {
+        # SNP, pink #
         "SLP_L": "ff007f",
         "SLP_R": "ff007f",
         "SIP_L": "ff70b7",
         "SIP_R": "ff70b7",
         "SMP_L": "ff99cb",
         "SMP_R": "ff99cb",
+        # LH, magenta #
         "LH_L": "ff00ff",
         "LH_R": "ff00ff",
-        "CA_L": "7f00ff",
-        "CA_R": "7f00ff",
-        "ACA_L": "9329ff",
-        "ACA_R": "9329ff",
-        "PED_L": "a852ff",
-        "PED_R": "a852ff",
-        "SPU_L": "b770ff",
-        "SPU_R": "b770ff",
-        "VL_L": "c48aff",
-        "VL_R": "c48aff",
-        "ML_L": "d9b3ff",
-        "ML_R": "d9b3ff",
+        # MB, blue-purple #
+        "MB_CA_L": "7f00ff",
+        "MB_CA_R": "7f00ff",
+        # "ACA_L": "9329ff",
+        # "ACA_R": "9329ff",
+        "MB_PED_L": "a852ff",
+        "MB_PED_R": "a852ff",
+        # "SPU_L": "b770ff",
+        # "SPU_R": "b770ff",
+        "MB_VL_L": "c48aff",
+        "MB_VL_R": "c48aff",
+        "MB_ML_L": "d9b3ff",
+        "MB_ML_R": "d9b3ff",
+        # AL, blue #
         "AL_L": "0000ff",
         "AL_R": "0000ff",
+        # INP, cyan-blue #
         "CRE_L": "007fff",
         "CRE_R": "007fff",
         "SCL_L": "2e95ff",
@@ -429,16 +434,20 @@ def makePie(root_id, cleft_thresh, incoming=False):
         "IB_R": "80bfff",
         "ATL_L": "a8d3ff",
         "ATL_R": "a8d3ff",
+        # VLNP, cyan #
         "AOTU_L": "00cccc",
         "AOTU_R": "00cccc",
         "AVLP_L": "00ffff",
         "AVLP_R": "00ffff",
         "PVLP_L": "52ffff",
         "PVLP_R": "52ffff",
+        "PLP_L": "269e9e",
+        "PLP_R": "269e9e",
         "WED_L": "85ffff",
         "WED_R": "85ffff",
-        "LA_L": "00a854",
-        "LA_R": "00a854",
+        # OL, blue-green #
+        # "LA_L": "00a854",
+        # "LA_R": "00a854",
         "ME_L": "00f57a",
         "ME_R": "00f57a",
         "AME_L": "1fff8f",
@@ -447,18 +456,17 @@ def makePie(root_id, cleft_thresh, incoming=False):
         "LO_R": "57ffab",
         "LOP_L": "85ffc2",
         "LOP_R": "85ffc2",
-        "FB_L": "5ebd00",
-        "FB_R": "5ebd00",
-        "EB_L": "7dfa00",
-        "EB_R": "7dfa00",
-        "PB_L": "a8fd53",
-        "PB_R": "a8fd53",
-        "NO_L": "ccff99",
-        "NO_R": "ccff99",
+        # CX, yellow-green #
+        "FB": "5ebd00",
+        "EB": "7dfa00",
+        "PB": "a8fd53",
+        "NO": "ccff99",
+        # LX, yellow #
         "BU_L": "ffff00",
         "BU_R": "ffff00",
         "LAL_L": "ffff8f",
         "LAL_R": "ffff8f",
+        # VMNP, orange-yellow #
         "VES_L": "cc9600",
         "VES_R": "cc9600",
         "EPA_L": "ffbe05",
@@ -469,16 +477,18 @@ def makePie(root_id, cleft_thresh, incoming=False):
         "SPS_R": "ffdc7a",
         "IPS_L": "ffe7a3",
         "IPS_R": "ffe7a3",
+        # PENP, red-orange #
         "AMMC_L": "e04400",
         "AMMC_R": "e04400",
         "FLA_L": "ff590f",
         "FLA_R": "ff590f",
         "CAN_L": "ff8752",
         "CAN_R": "ff8752",
-        "PRW_L": "ffbc9e",
-        "PRW_R": "ffbc9e",
-        "GNG_L": "ff0000",
-        "GNG_R": "ff0000",
+        "PRW": "ffbc9e",
+        "SAD": "C1663E",
+        # GNG, red #
+        "GNG": "ff0000",
+        # Other & None, <1% grey & black #
         "Other": "efefef",
         "None": "000000",
     }
@@ -522,6 +532,13 @@ def makeSummaryDataFrame(root_id, cleft_thresh):
     nuc_df = getNuc(root_id)
     up_df = up_query[0]
     down_df = down_query[0]
+
+    # exception handling for segments without nuclei #
+    if nuc_df.empty:
+        nuc_df = pd.DataFrame(
+            {"Root ID": root_id, "Nucleus ID": "n/a", "Nucleus Coordinates": "n/a",},
+            index=[0],
+        ).astype(str)
 
     # sets output message from up- and downstream messages #
     output_message = (
