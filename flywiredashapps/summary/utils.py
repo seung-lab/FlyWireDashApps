@@ -92,32 +92,9 @@ def coordsToRoot(coords):
     point = int(cv.download_point(cv_xyz, size=1,))
 
     # looks up sv's associated root id, converts to string #
-    root_result = str(client.chunkedgraph.get_root_id(supervoxel_id=point))
+    root_result = int(client.chunkedgraph.get_root_id(supervoxel_id=point))
 
     return root_result
-
-
-def idConvert(id_val):
-    """Identify id type and convert to root if necessary
-
-    Keyword arguments:
-    id -- root id, nuc id, or xyz coords
-    """
-    # converts coordinates or list-format input into non-listed int
-    if type(id_val) == list:
-        if len(id_val) == 3:
-            id_val = coordsToRoot(id_val)
-        else:
-            id_val = int(id_val[0])
-
-    elif type(id_val) == str or type(id_val) == float:
-        id_val = int(id_val)
-
-    # converts nucleus id to root id #
-    if len(str(id_val)) == 7:
-        id_val = nucToRoot(id_val)
-
-    return id_val
 
 
 def nmToNG(coords):
@@ -167,6 +144,10 @@ def rootListToDataFrame(root_list):
     for i in root_list:
         change_df = pd.DataFrame(client.chunkedgraph.get_tabular_change_log(i)[i])
         edits_dict = change_df["is_merge"].value_counts().to_dict()
+        if True not in edits_dict:
+            edits_dict[True] = 0
+        if False not in edits_dict:
+            edits_dict[False] = 0
         proofreader_list = np.unique(change_df["user_id"])
         proofreaders = ", ".join([str(i) for i in proofreader_list])
 

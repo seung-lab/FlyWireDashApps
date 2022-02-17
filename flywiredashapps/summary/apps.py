@@ -1,28 +1,51 @@
 import time
 import dash
-from dash import dcc, html, Input, Output, State, dash_table
+import dash_bootstrap_components as dbc
+from dash import Dash, dcc, html, Input, Output, State, dash_table
 from utils import *
 
-app = dash.Dash(__name__)
+app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # defines layout of various app elements (submission field, checkboxes, button, output table) #
 app.layout = html.Div(
     [
         # defines text area to relay messages #
-        dcc.Textarea(
+        dbc.Textarea(
             id="message_text",
             value="Input Root IDs, Nuc IDs, or coords in 4,4,40nm\n"
-            "ID queries are limited to 20 entries, coordinate lookups must be done one at a time.\n"
+            "ID queries are limited to 20 entries.\n"
+            "Coordinate lookups must be done one at a time.\n"
             "Lookup takes ~2-3 seconds per entry.",
-            style={"width": "650px", "resize": "none"},
-            rows=3,
+            style={"width": "420px", "resize": "none"},
+            rows=4,
             disabled=True,
         ),
         # defines input field for ids #
-        html.Div(dcc.Input(id="input_field", type="text", placeholder="ID Number",)),
-        html.Br(),
-        # defines submission button #
-        html.Button("Submit", id="submit_button", n_clicks=0,),
+        html.Div(
+            [
+                dbc.Input(
+                    id="input_field",
+                    type="text",
+                    placeholder="Root/Nuc ID or Coords",
+                    style={
+                        "width": "190px",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                ),
+                # defines submission button #
+                dbc.Button(
+                    "Submit",
+                    id="submit_button",
+                    n_clicks=0,
+                    style={
+                        "width": "230px",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                ),
+            ]
+        ),
         html.Br(),
         # defines output table #
         html.Div(
