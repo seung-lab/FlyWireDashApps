@@ -410,12 +410,8 @@ def makePie(root_id, cleft_thresh, incoming=False):
         # MB, blue-purple #
         "MB_CA_L": "7f00ff",
         "MB_CA_R": "7f00ff",
-        # "ACA_L": "9329ff",
-        # "ACA_R": "9329ff",
         "MB_PED_L": "a852ff",
         "MB_PED_R": "a852ff",
-        # "SPU_L": "b770ff",
-        # "SPU_R": "b770ff",
         "MB_VL_L": "c48aff",
         "MB_VL_R": "c48aff",
         "MB_ML_L": "d9b3ff",
@@ -446,8 +442,6 @@ def makePie(root_id, cleft_thresh, incoming=False):
         "WED_L": "85ffff",
         "WED_R": "85ffff",
         # OL, blue-green #
-        # "LA_L": "00a854",
-        # "LA_R": "00a854",
         "ME_L": "00f57a",
         "ME_R": "00f57a",
         "AME_L": "1fff8f",
@@ -464,6 +458,7 @@ def makePie(root_id, cleft_thresh, incoming=False):
         # LX, yellow #
         "BU_L": "ffff00",
         "BU_R": "ffff00",
+        "GA": "a6a600",
         "LAL_L": "ffff8f",
         "LAL_R": "ffff8f",
         # VMNP, orange-yellow #
