@@ -349,7 +349,9 @@ def register_callbacks(app, config=None):
 
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
-        out_url = buildLink([query_out], [up_out], [down_out], cleft_thresh, nuc)
+        out_url = buildLink(
+            [query_out], [up_out], [down_out], cleft_thresh, nuc, config=config
+        )
 
         return [out_url, ""]
 
