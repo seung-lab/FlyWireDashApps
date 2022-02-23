@@ -8,8 +8,8 @@ import flask
 
 
 def create_app(name=__name__, config={}, **kwargs):
-    # if "external_stylesheets" not in kwargs:
-    #     kwargs["external_stylesheets"] = external_stylesheets
+    if "external_stylesheets" not in kwargs:
+        kwargs["external_stylesheets"] = external_stylesheets
     app = Dash(name, **kwargs)
     app.title = title
     app.layout = app_layout
