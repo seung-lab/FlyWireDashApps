@@ -13,7 +13,12 @@ from annotationframeworkclient import FrameworkClient
 
 
 def buildLink(
-    query_id, up_id, down_id, cleft_thresh, nucleus, cb=False,
+    query_id,
+    up_id,
+    down_id,
+    cleft_thresh,
+    nucleus,
+    cb=False,
 ):
     """Generate NG link.
 
@@ -61,7 +66,10 @@ def buildLink(
     if up_id[0] != 0 and down_id[0] != 0:
         up_df = getSyn(up_id[0], query_id[0], cleft_thresh)[0]
         down_df = getSyn(query_id[0], down_id[0], cleft_thresh)[0]
-        syns_df = up_df.append(down_df, ignore_index=True,)
+        syns_df = up_df.append(
+            down_df,
+            ignore_index=True,
+        )
     elif up_id[0] == 0 and down_id[0] != 0:
         syns_df = getSyn(query_id[0], down_id[0], cleft_thresh)[0]
     elif up_id[0] != 0 and down_id[0] == 0:
@@ -78,10 +86,16 @@ def buildLink(
     )
 
     # defines configuration for line annotations #
-    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+    lines = LineMapper(
+        point_column_a="pre",
+        point_column_b="post",
+    )
 
     # defines configuration for annotation layer #
-    anno = AnnotationLayerConfig(name="synapses", mapping_rules=lines,)
+    anno = AnnotationLayerConfig(
+        name="synapses",
+        mapping_rules=lines,
+    )
 
     # sets view to nucelus of query cell #
     # defaults to center of dataset if no input #
@@ -92,23 +106,40 @@ def buildLink(
         }
     else:
         view_options = {
-            "position": [119412, 62016, 3539,],
+            "position": [
+                119412,
+                62016,
+                3539,
+            ],
             "zoom_3d": 10000,
         }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
-    sb = StateBuilder([img, seg, anno,], view_kws=view_options,)
+    sb = StateBuilder(
+        [
+            img,
+            seg,
+            anno,
+        ],
+        view_kws=view_options,
+    )
 
     # renders state as json and converts dumped json produced by #
     # render_state into non-dumped version using json.loads() #
-    state_json = json.loads(sb.render_state(coords_df, return_as="json",))
+    state_json = json.loads(
+        sb.render_state(
+            coords_df,
+            return_as="json",
+        )
+    )
 
     # feeds state_json into state uploader to set the value of 'new_id' #
     new_id = client.state.upload_state_json(state_json)
 
     # defines url using builder, passing in the new_id and the ngl url #
     url = client.state.build_neuroglancer_url(
-        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+        state_id=new_id,
+        ngl_url="https://ngl.flywire.ai/",
     )
 
     return url
@@ -144,7 +175,12 @@ def coordsToRoot(coords):
     ]
 
     # sets point by passing converted coords to 'download_point' method #
-    point = int(cv.download_point(cv_xyz, size=1,))
+    point = int(
+        cv.download_point(
+            cv_xyz,
+            size=1,
+        )
+    )
 
     # looks up sv's associated root id, converts to string #
     root_result = str(client.chunkedgraph.get_root_id(supervoxel_id=point))
@@ -187,7 +223,7 @@ def getNuc(root_id):
     return out_df.astype(str)
 
 
-@lru_cache
+@lru_cache(maxsize=None)
 def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     """Create table of synapses for a given root id.
 
@@ -206,7 +242,10 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            [
+                ["synapses_nt_v1", "id"],
+                ["fly_synapses_neuropil", "id"],
+            ],
             filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
             suffixes=["syn", "nuc"],
             materialization_version=mat_vers,
@@ -214,7 +253,10 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            [
+                ["synapses_nt_v1", "id"],
+                ["fly_synapses_neuropil", "id"],
+            ],
             filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
             suffixes=["syn", "nuc"],
             materialization_version=mat_vers,
@@ -222,7 +264,10 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     else:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            [
+                ["synapses_nt_v1", "id"],
+                ["fly_synapses_neuropil", "id"],
+            ],
             filter_in_dict={
                 "synapses_nt_v1": {
                     "pre_pt_root_id": [pre_root],
@@ -325,7 +370,16 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False):
 
     # drops all nonessential columns #
     nt_df = raw_nt_df.filter(
-        [column_name, "gaba", "ach", "glut", "oct", "ser", "da",], axis=1,
+        [
+            column_name,
+            "gaba",
+            "ach",
+            "glut",
+            "oct",
+            "ser",
+            "da",
+        ],
+        axis=1,
     )
 
     # renames columns #
@@ -346,12 +400,18 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False):
     nt_df = nt_df.round(3)
 
     # adds neurotransmitter averages for each partner to partner df #
-    partner_df = partner_df.join(nt_df.set_index(title_name), on=title_name,)
+    partner_df = partner_df.join(
+        nt_df.set_index(title_name),
+        on=title_name,
+    )
 
     # sorts by number of synapses and resets index #
     partner_df = (
         partner_df.astype({"Synapses": int})
-        .sort_values(by="Synapses", ascending=False,)
+        .sort_values(
+            by="Synapses",
+            ascending=False,
+        )
         .reset_index(drop=True)
     )
 
@@ -500,12 +560,20 @@ def makePie(root_id, cleft_thresh, incoming=False):
 
     # adds text labels inside pie chart slices #
     region_pie.update_traces(
-        textposition="inside", textinfo="label",
+        textposition="inside",
+        textinfo="label",
     )
 
     # formats size of chart to match NTs #
     region_pie.update_layout(
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,}, width=400, height=200,
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
+        width=400,
+        height=200,
     )
 
     return region_pie
@@ -531,7 +599,11 @@ def makeSummaryDataFrame(root_id, cleft_thresh):
     # exception handling for segments without nuclei #
     if nuc_df.empty:
         nuc_df = pd.DataFrame(
-            {"Root ID": root_id, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
+            {
+                "Root ID": root_id,
+                "Nuc ID": "n/a",
+                "Nucleus Coordinates": "n/a",
+            },
             index=[0],
         ).astype(str)
 
@@ -601,12 +673,42 @@ def makeViolin(root_id, cleft_thresh, incoming=False):
     fig = go.Figure()
 
     # adds line data #
-    fig.add_trace(go.Violin(y=list(query_df["gaba"]), name="Gaba",))
-    fig.add_trace(go.Violin(y=list(query_df["ach"]), name="Ach",))
-    fig.add_trace(go.Violin(y=list(query_df["glut"]), name="Glut",))
-    fig.add_trace(go.Violin(y=list(query_df["oct"]), name="Oct",))
-    fig.add_trace(go.Violin(y=list(query_df["ser"]), name="Ser",))
-    fig.add_trace(go.Violin(y=list(query_df["da"]), name="Da",))
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["gaba"]),
+            name="Gaba",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ach"]),
+            name="Ach",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["glut"]),
+            name="Glut",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["oct"]),
+            name="Oct",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ser"]),
+            name="Ser",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["da"]),
+            name="Da",
+        )
+    )
 
     # hides points #
     fig.update_traces(points=False)
@@ -614,7 +716,12 @@ def makeViolin(root_id, cleft_thresh, incoming=False):
     # fixes layout to minimize padding and fit two on one line #
     fig.update_layout(
         title=title_name,
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,},
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
         width=400,
         height=200,
     )
@@ -644,7 +751,9 @@ def nucToRoot(nuc_id):
     client = CAVEclient("flywire_fafb_production")
     mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
+        "nuclei_v1",
+        filter_in_dict={"id": [nuc_id]},
+        materialization_version=mat_vers,
     )
     root_id = int(nuc_df.loc[0, "pt_root_id"])
     return root_id
