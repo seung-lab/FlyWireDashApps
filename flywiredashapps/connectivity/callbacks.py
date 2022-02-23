@@ -159,14 +159,20 @@ def register_callbacks(app, config=None):
             root_id = idConvert(query_id)
 
             # builds dataframes and graphs #
-            sum_list = makeSummaryDataFrame(root_id, cleft_thresh)
+            sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
             sum_df = sum_list[0]
-            up_df = makePartnerDataFrame(root_id, cleft_thresh, upstream=True)
-            down_df = makePartnerDataFrame(root_id, cleft_thresh, upstream=False)
-            up_violin = makeViolin(root_id, cleft_thresh, incoming=True)
-            down_violin = makeViolin(root_id, cleft_thresh, incoming=False)
-            up_pie = makePie(root_id, cleft_thresh, incoming=True)
-            down_pie = makePie(root_id, cleft_thresh, incoming=False)
+            up_df = makePartnerDataFrame(
+                root_id, cleft_thresh, upstream=True, config=config
+            )
+            down_df = makePartnerDataFrame(
+                root_id, cleft_thresh, upstream=False, config=config
+            )
+            up_violin = makeViolin(root_id, cleft_thresh, incoming=True, config=config)
+            down_violin = makeViolin(
+                root_id, cleft_thresh, incoming=False, config=config
+            )
+            up_pie = makePie(root_id, cleft_thresh, incoming=True, config=config)
+            down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
 
             # assigns df values to 'cols' and 'data' for passing to dash table #
             sum_cols = [

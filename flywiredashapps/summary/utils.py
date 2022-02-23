@@ -1,4 +1,4 @@
-from caveclient import CAVEclient
+from ..common import lookup_utilities
 import cloudvolume
 import pandas as pd
 import numpy as np
@@ -12,7 +12,9 @@ def getNuc(root_id):
     """
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
 
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
@@ -41,7 +43,7 @@ def getNuc(root_id):
 
 def inputToRootList(input_str):
     """Convert input string into list of int root ids.
-    
+
     Keyword arguments:
     input_str -- string of ids or 4,4,40nm coords separated by ,
     """
@@ -70,7 +72,9 @@ def coordsToRoot(coords):
     coords = list(map(int, coords))
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
 
     # sets cloud volume #
     cv = cloudvolume.CloudVolume(
@@ -89,7 +93,12 @@ def coordsToRoot(coords):
     ]
 
     # sets point by passing converted coords to 'download_point' method #
-    point = int(cv.download_point(cv_xyz, size=1,))
+    point = int(
+        cv.download_point(
+            cv_xyz,
+            size=1,
+        )
+    )
 
     # looks up sv's associated root id, converts to string #
     root_result = int(client.chunkedgraph.get_root_id(supervoxel_id=point))
@@ -116,10 +125,14 @@ def nucToRoot(nuc_id):
     Keyword arguments:
     nuc_id -- 7-digit nucleus id as int
     """
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
     mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
+        "nuclei_v1",
+        filter_in_dict={"id": [nuc_id]},
+        materialization_version=mat_vers,
     )
     root_id = int(nuc_df.loc[0, "pt_root_id"])
     return root_id
@@ -127,7 +140,9 @@ def nucToRoot(nuc_id):
 
 def rootListToDataFrame(root_list):
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
     # creates blank output dataframe #
     output_df = pd.DataFrame(
         columns=[
@@ -156,7 +171,11 @@ def rootListToDataFrame(root_list):
         # handles segments without nuclei #
         if row_df.empty:
             row_df = pd.DataFrame(
-                {"Root ID": i, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
+                {
+                    "Root ID": i,
+                    "Nuc ID": "n/a",
+                    "Nucleus Coordinates": "n/a",
+                },
                 index=[0],
             ).astype(str)
 
