@@ -42,9 +42,64 @@ def register_callbacks(app, config=None):
             # defines summary downloader #
             html.Div(
                 [
+                    # defines link generation button #
+                    html.Div(
+                        children=[
+                            dbc.Button(
+                                "Generate NG Link Using Selected Partners",
+                                id="link_button",
+                                n_clicks=0,
+                                style={
+                                    "margin-top": "5px",
+                                    "margin-right": "5px",
+                                    "margin-left": "5px",
+                                    "margin-bottom": "5px",
+                                    "width": "420px",
+                                },
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        children=[
+                            # defines button to clear table selections #
+                            dbc.Button(
+                                "Clear Partner Selections",
+                                id="clear_button",
+                                n_clicks=0,
+                                color="danger",
+                                style={
+                                    "width": "420px",
+                                    "margin-right": "5px",
+                                    "margin-left": "5px",
+                                    "margin-top": "25px",
+                                    "margin-bottom": "5px",
+                                },
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        children=[
+                            # defines link button loader #
+                            html.Div(
+                                dcc.Loading(
+                                    id="link_loader", type="default", children=""
+                                ),
+                                style={
+                                    "margin-right": "5px",
+                                    "margin-left": "5px",
+                                    "width": "1000px",
+                                },
+                            ),
+                        ],
+                    ),
+                ]
+            ),
+            html.Div(
+                [
                     dbc.Button(
                         "Download Summary Table as CSV File",
                         id="summary_download_button",
+                        color="success",
                         style={
                             "width": "420px",
                             "margin-right": "5px",
@@ -62,6 +117,7 @@ def register_callbacks(app, config=None):
                     dbc.Button(
                         "Download Upstream Partner Table as CSV File",
                         id="upstream_download_button",
+                        color="success",
                         style={
                             "width": "420px",
                             "margin-right": "5px",
@@ -79,6 +135,7 @@ def register_callbacks(app, config=None):
                     dbc.Button(
                         "Download Downstream Partner Table as CSV File",
                         id="downstream_download_button",
+                        color="success",
                         style={
                             "width": "420px",
                             "margin-right": "5px",
@@ -90,54 +147,6 @@ def register_callbacks(app, config=None):
                 ]
             ),
             dcc.Download(id="downstream_download"),
-            # defines button to clear table selections #
-            dbc.Button(
-                "Clear Partner Selections",
-                id="clear_button",
-                n_clicks=0,
-                color="danger",
-                style={
-                    "width": "420px",
-                    "margin-right": "5px",
-                    "margin-left": "5px",
-                    "margin-top": "25px",
-                    "margin-bottom": "5px",
-                },
-            ),
-            # defines link generation button #
-            html.Div(
-                children=[
-                    dbc.Button(
-                        "Generate NG Link Using Selected Partners",
-                        id="link_button",
-                        n_clicks=0,
-                        style={
-                            "margin-top": "5px",
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "margin-bottom": "5px",
-                            "width": "420px",
-                        },
-                    ),
-                    dcc.Link(
-                        href="",
-                        id="ng_link",
-                        style={
-                            "margin-top": "15px",
-                            "margin-bottom": "15px",
-                        },
-                    ),
-                ],
-            ),
-            # defines link button loader #
-            html.Div(
-                dcc.Loading(id="link_loader", type="default", children=""),
-                style={
-                    "margin-right": "5px",
-                    "margin-left": "5px",
-                    "width": "1000px",
-                },
-            ),
         ]
 
         start_time = time.time()
@@ -159,43 +168,19 @@ def register_callbacks(app, config=None):
             root_id = idConvert(query_id)
 
             # builds dataframes and graphs #
-            sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
+            sum_list = makeSummaryDataFrame(root_id, cleft_thresh)
             sum_df = sum_list[0]
-            up_df = makePartnerDataFrame(
-                root_id, cleft_thresh, upstream=True, config=config
-            )
-            down_df = makePartnerDataFrame(
-                root_id, cleft_thresh, upstream=False, config=config
-            )
-            up_violin = makeViolin(root_id, cleft_thresh, incoming=True, config=config)
-            down_violin = makeViolin(
-                root_id, cleft_thresh, incoming=False, config=config
-            )
-            up_pie = makePie(root_id, cleft_thresh, incoming=True, config=config)
-            down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
+            up_df = makePartnerDataFrame(root_id, cleft_thresh, upstream=True)
+            down_df = makePartnerDataFrame(root_id, cleft_thresh, upstream=False)
+            up_violin = makeViolin(root_id, cleft_thresh, incoming=True)
+            down_violin = makeViolin(root_id, cleft_thresh, incoming=False)
+            up_pie = makePie(root_id, cleft_thresh, incoming=True)
+            down_pie = makePie(root_id, cleft_thresh, incoming=False)
 
             # assigns df values to 'cols' and 'data' for passing to dash table #
-            sum_cols = [
-                {
-                    "name": i,
-                    "id": i,
-                }
-                for i in sum_df.columns
-            ]
-            up_cols = [
-                {
-                    "name": i,
-                    "id": i,
-                }
-                for i in up_df.columns
-            ]
-            down_cols = [
-                {
-                    "name": i,
-                    "id": i,
-                }
-                for i in down_df.columns
-            ]
+            sum_cols = [{"name": i, "id": i,} for i in sum_df.columns]
+            up_cols = [{"name": i, "id": i,} for i in up_df.columns]
+            down_cols = [{"name": i, "id": i,} for i in down_df.columns]
             sum_data = sum_df.to_dict("records")
             up_data = up_df.to_dict("records")
             down_data = down_df.to_dict("records")
@@ -203,39 +188,21 @@ def register_callbacks(app, config=None):
             # builds list of figures to pass to children of graph_div #
             figs = [
                 html.Div(
-                    dcc.Graph(
-                        id="incoming_figure",
-                        figure=up_violin,
-                    ),
+                    dcc.Graph(id="incoming_figure", figure=up_violin,),
                     style={"display": "inline-block"},
                 ),
                 html.Div(
-                    dcc.Graph(
-                        id="outgoing_figure",
-                        figure=down_violin,
-                    ),
-                    style={
-                        "display": "inline-block",
-                    },
+                    dcc.Graph(id="outgoing_figure", figure=down_violin,),
+                    style={"display": "inline-block",},
                 ),
                 # html.Br(),
                 html.Div(
-                    dcc.Graph(
-                        id="in_pie_chart",
-                        figure=up_pie,
-                    ),
-                    style={
-                        "display": "inline-block",
-                    },
+                    dcc.Graph(id="in_pie_chart", figure=up_pie,),
+                    style={"display": "inline-block",},
                 ),
                 html.Div(
-                    dcc.Graph(
-                        id="out_pie_chart",
-                        figure=down_pie,
-                    ),
-                    style={
-                        "display": "inline-block",
-                    },
+                    dcc.Graph(id="out_pie_chart", figure=down_pie,),
+                    style={"display": "inline-block",},
                 ),
             ]
 
@@ -283,46 +250,27 @@ def register_callbacks(app, config=None):
 
     # defines callback that generates neuroglancer link #
     @app.callback(
-        Output(
-            "ng_link",
-            "href",
-        ),
-        Output(
-            "link_loader",
-            "children",
-        ),
-        Input(
-            "link_button",
-            "n_clicks",
-        ),
-        State(
-            "incoming_table",
-            "active_cell",
-        ),
-        State(
-            "outgoing_table",
-            "active_cell",
-        ),
-        State(
-            "summary_table",
-            "data",
-        ),
-        State(
-            "incoming_table",
-            "data",
-        ),
-        State(
-            "outgoing_table",
-            "data",
-        ),
-        State(
-            "cleft_thresh_field",
-            "value",
-        ),
+        Output("link_button", "href",),
+        Output("link_loader", "children",),
+        Input("incoming_table", "active_cell",),
+        Input("outgoing_table", "active_cell",),
+        State("incoming_table", "active_cell",),
+        State("outgoing_table", "active_cell",),
+        State("summary_table", "data",),
+        State("incoming_table", "data",),
+        State("outgoing_table", "data",),
+        State("cleft_thresh_field", "value",),
         prevent_initial_call=True,
     )
     def makeLink(
-        n_clicks, up_id, down_id, query_data, up_data, down_data, cleft_thresh
+        up_dummy,
+        down_dummy,
+        up_id,
+        down_id,
+        query_data,
+        up_data,
+        down_data,
+        cleft_thresh,
     ):
         """Create neuroglancer link using selected partners.
 
@@ -349,34 +297,17 @@ def register_callbacks(app, config=None):
 
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
-        out_url = buildLink(
-            [query_out], [up_out], [down_out], cleft_thresh, nuc, config=config
-        )
+        out_url = buildLink([query_out], [up_out], [down_out], cleft_thresh, nuc)
 
         return [out_url, ""]
 
     # defines callback that clears table selections #
     @app.callback(
-        Output(
-            "incoming_table",
-            "active_cell",
-        ),
-        Output(
-            "outgoing_table",
-            "active_cell",
-        ),
-        Output(
-            "incoming_table",
-            "selected_cells",
-        ),
-        Output(
-            "outgoing_table",
-            "selected_cells",
-        ),
-        Input(
-            "clear_button",
-            "n_clicks",
-        ),
+        Output("incoming_table", "active_cell",),
+        Output("outgoing_table", "active_cell",),
+        Output("incoming_table", "selected_cells",),
+        Output("outgoing_table", "selected_cells",),
+        Input("clear_button", "n_clicks",),
         prevent_initial_call=True,
     )
     def clearSelected(n_clicks):

@@ -27,7 +27,10 @@ def page_layout(state={}):
                 disabled=True,
                 rows=1,
                 style={
-                    # "width": "420px",
+                    "margin-left": "5px",
+                    "margin-right": "15px",
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
                     "resize": "none",
                 },
             ),
@@ -60,9 +63,7 @@ def page_layout(state={}):
                         },
                     ),
                 ],
-                style={
-                    "margin-left": "5px",
-                },
+                style={"margin-left": "5px",},
             ),
             # defines container for cleft score message and field #
             html.Div(
@@ -92,22 +93,18 @@ def page_layout(state={}):
                         },
                     ),
                 ],
-                style={
-                    "margin-left": "5px",
-                    "margin-top": "5px",
-                },
+                style={"margin-left": "5px", "margin-top": "5px",},
             ),
             # defines sumbission button #
             dbc.Button(
-                children=[
-                    "Submit",
-                ],
+                children=["Submit",],
                 id="submit_button",
                 n_clicks=0,
                 style={
                     "display": "inline-block",
                     "width": "420px",
                     "margin-left": "5px",
+                    "margin-right": "5px",
                     "margin-top": "5px",
                     "margin-bottom": "5px",
                 },
@@ -115,9 +112,7 @@ def page_layout(state={}):
             # defines submit button loader #
             html.Div(
                 dcc.Loading(id="submit_loader", type="default", children=""),
-                style={
-                    "width": "1000px",
-                },
+                style={"width": "1000px",},
             ),
             html.Br(),
             # defines neurotransmitter plot display div #
@@ -140,20 +135,35 @@ def page_layout(state={}):
                         "height": "auto",
                         "textAlign": "center",
                     },
-                )
+                ),
+                style={
+                    "margin-left": "5px",
+                    "margin-right": "5px",
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
+                },
             ),
             html.Br(),
             # defines incoming table #
             html.Div(
-                dash_table.DataTable(
-                    id="incoming_table",
-                    page_size=5,
-                )
+                dash_table.DataTable(id="incoming_table", page_size=5,),
+                style={
+                    "margin-left": "5px",
+                    "margin-right": "5px",
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
+                },
             ),
-            html.Br(),
             # defines outgoing table #
-            html.Div(dash_table.DataTable(id="outgoing_table", page_size=5)),
-            html.Br(),
+            html.Div(
+                dash_table.DataTable(id="outgoing_table", page_size=5),
+                style={
+                    "margin-left": "5px",
+                    "margin-right": "5px",
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
+                },
+            ),
             # defines div for holding post-submission buttons #
             html.Div(children=[], id="post_submit_div"),
         ]
