@@ -59,6 +59,8 @@ def buildLink(
         view_kws={"alpha_3d": 0.8},
     )
 
+    print("1. UP ID:", up_id)
+
     # creates dataframe to use for link building and handles single-partner chocies #
     if up_id[0] != 0 and down_id[0] != 0:
         up_df = getSyn(up_id[0], query_id[0], cleft_thresh)[0]
@@ -68,10 +70,14 @@ def buildLink(
         syns_df = getSyn(query_id[0], down_id[0], cleft_thresh)[0]
     elif up_id[0] != 0 and down_id[0] == 0:
         syns_df = getSyn(up_id[0], query_id[0], cleft_thresh)[0]
+
+        print(
+            "2. COORDS AFTER GETSYN, BEFORE CONVERSION:",
+            syns_df.loc[0, "pre_pt_position"],
+        )
+
     else:
         syns_df = pd.DataFrame()
-
-    print("syns_df pre_pt_position: ", syns_df.loc[0, "pre_pt_position"])
 
     # makes truncated df of pre & post coords #
     coords_df = pd.DataFrame(
@@ -81,7 +87,7 @@ def buildLink(
         }
     )
 
-    print("coords_df pre: ", coords_df.loc[0, "pre"])
+    print("3. COORDS AFTER CONVERSION: ", coords_df.loc[0, "pre"])
 
     # defines configuration for line annotations #
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
@@ -259,6 +265,8 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
 
     zeroot_num = len(syn_df)
 
+    print("getSyn results: ", syn_df.loc[0, "pre_pt_position"])
+
     output_message = (
         str(raw_num - cleft_num)
         + " synapses below threshold, "
@@ -402,6 +410,9 @@ def makePie(root_id, cleft_thresh, incoming=False):
     # consolidates all regions less than 1% into 'Other' #
     ratios_df.loc[ratios_df["Ratio"] < 0.01, "Neuropil"] = "Other"
 
+    # renames 'None' as 'Unknown' #
+    ratios_df.loc[ratios_df["Neuropil"] == "None", "Neuropil"] = "Unknown"
+
     np_color_dict = {
         # SNP, pink #
         "SLP_L": "ff007f",
@@ -489,9 +500,9 @@ def makePie(root_id, cleft_thresh, incoming=False):
         "SAD": "C1663E",
         # GNG, red #
         "GNG": "ff0000",
-        # Other & None, <1% grey & black #
+        # Other & Unknown, <1% grey & black #
         "Other": "efefef",
-        "None": "000000",
+        "Unknown": "000000",
     }
 
     # makes pie chart #
