@@ -348,7 +348,7 @@ def getSyn(
     return [syn_df, output_message]
 
 
-def idConvert(id_val):
+def idConvert(id_val, config):
     """Identify id type and convert to root if necessary
 
     Keyword arguments:

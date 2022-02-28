@@ -156,7 +156,7 @@ def register_callbacks(app, config=None):
         ):
 
             # converts id input to root id #
-            root_id = idConvert(query_id)
+            root_id = idConvert(query_id, config=config)
 
             # builds dataframes and graphs #
             sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
