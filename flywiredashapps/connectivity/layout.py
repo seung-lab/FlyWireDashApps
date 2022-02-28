@@ -17,21 +17,23 @@ def page_layout(state={}):
     layout = html.Div(
         [
             # defines text area for instructions and feedback#
-            dbc.Textarea(
-                id="message_text",
-                value=(
-                    'Input root/nuc ID or coordinates and click "Submit" button.'
-                    + " Only one entry at a time."
-                    + " Large queries (>100k synapses) may take up to 2 minutes."
+            html.Div(
+                dbc.Textarea(
+                    id="message_text",
+                    value=(
+                        'Input root/nuc ID or coordinates and click "Submit" button.'
+                        + " Only one entry at a time."
+                        + " Large queries (>100k synapses) may take up to 2 minutes."
+                    ),
+                    disabled=True,
+                    rows=1,
+                    style={"resize": "none",},
                 ),
-                disabled=True,
-                rows=1,
                 style={
                     "margin-left": "5px",
-                    "margin-right": "15px",
+                    "margin-right": "5px",
                     "margin-top": "5px",
                     "margin-bottom": "5px",
-                    "resize": "none",
                 },
             ),
             html.Br(),
