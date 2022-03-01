@@ -1,6 +1,5 @@
 # Module for reused functions
 
-from caveclient import CAVEclient
 import cloudvolume
 from functools import lru_cache
 import pandas as pd
@@ -9,11 +8,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 from nglui.statebuilder import *
-from annotationframeworkclient import FrameworkClient
+from ..common import lookup_utilities
 
 
 def buildLink(
-    query_id, up_id, down_id, cleft_thresh, nucleus, cb=False,
+    query_id, up_id, down_id, cleft_thresh, nucleus, cb=False, config={},
 ):
     """Generate NG link.
 
@@ -42,8 +41,10 @@ def buildLink(
     down_cols = [down_color] * len(down_id)
     color_list = [query_color] + up_cols + down_cols
 
-    # sets Framework client using flywire production datastack #
-    client = FrameworkClient("flywire_fafb_production")
+    # sets client using flywire production datastack #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
 
     # sets configuration for EM layer #
     img = ImageLayerConfig(client.info.image_source())
@@ -59,13 +60,37 @@ def buildLink(
 
     # creates dataframe to use for link building and handles single-partner chocies #
     if up_id[0] != 0 and down_id[0] != 0:
-        up_df = getSynNoCache(up_id[0], query_id[0], cleft_thresh)[0]
-        down_df = getSynNoCache(query_id[0], down_id[0], cleft_thresh)[0]
+        up_df = getSynNoCache(
+            up_id[0],
+            query_id[0],
+            cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
+        down_df = getSynNoCache(
+            query_id[0],
+            down_id[0],
+            cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         syns_df = up_df.append(down_df, ignore_index=True,)
     elif up_id[0] == 0 and down_id[0] != 0:
-        syns_df = getSynNoCache(query_id[0], down_id[0], cleft_thresh)[0]
+        syns_df = getSynNoCache(
+            query_id[0],
+            down_id[0],
+            cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
     elif up_id[0] != 0 and down_id[0] == 0:
-        syns_df = getSynNoCache(up_id[0], query_id[0], cleft_thresh)[0]
+        syns_df = getSynNoCache(
+            up_id[0],
+            query_id[0],
+            cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
     else:
         syns_df = pd.DataFrame()
 
@@ -114,7 +139,7 @@ def buildLink(
     return url
 
 
-def coordsToRoot(coords):
+def coordsToRoot(coords, config={}):
     """Convert coordinates in 4,4,40 nm resolution to root id.
 
     Keyword arguments:
@@ -125,7 +150,9 @@ def coordsToRoot(coords):
     coords = list(map(int, coords))
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
 
     # sets cloud volume #
     cv = cloudvolume.CloudVolume(
@@ -152,7 +179,7 @@ def coordsToRoot(coords):
     return root_result
 
 
-def getNuc(root_id):
+def getNuc(root_id, config={}):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
@@ -160,7 +187,9 @@ def getNuc(root_id):
     """
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
 
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
@@ -187,8 +216,10 @@ def getNuc(root_id):
     return out_df.astype(str)
 
 
-@lru_cache
-def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
+@lru_cache(maxsize=None)
+def getSyn(
+    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+):
     """Create a cached table of synapses for a given root id.
 
     Keyword arguments:
@@ -198,7 +229,7 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     """
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(datastack_name, server_address)
 
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
@@ -270,7 +301,9 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
     return [syn_df, output_message]
 
 
-def getSynNoCache(pre_root=0, post_root=0, cleft_thresh=0.0):
+def getSynNoCache(
+    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+):
     """Create an uncached table of synapses for a given root id.
 
     Keyword arguments:
@@ -280,7 +313,7 @@ def getSynNoCache(pre_root=0, post_root=0, cleft_thresh=0.0):
     """
 
     # sets client #
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(datastack_name, server_address)
 
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
@@ -361,7 +394,7 @@ def idConvert(id_val, config):
     # converts coordinates or list-format input into non-listed int
     if type(id_val) == list:
         if len(id_val) == 3:
-            id_val = coordsToRoot(id_val)
+            id_val = coordsToRoot(id_val, config=config)
         else:
             id_val = int(id_val[0])
 
@@ -370,12 +403,12 @@ def idConvert(id_val, config):
 
     # converts nucleus id to root id #
     if len(str(id_val)) == 7:
-        id_val = nucToRoot(id_val)
+        id_val = nucToRoot(id_val, config=config)
 
     return id_val
 
 
-def makePartnerDataFrame(root_id, cleft_thresh, upstream=False):
+def makePartnerDataFrame(root_id, cleft_thresh, upstream=False, config={}):
     """Make dataframe with summary info.
 
     Keyword arguments:
@@ -386,11 +419,23 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False):
 
     # makes df of queried neuron synapses #
     if upstream == True:
-        query_df = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=0,
+            post_root=root_id,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         column_name = "pre_pt_root_id"
         title_name = "Upstream Partner ID"
     else:
-        query_df = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=root_id,
+            post_root=0,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         column_name = "post_pt_root_id"
         title_name = "Downstream Partner ID"
 
@@ -441,7 +486,7 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False):
     return partner_df.astype(str)
 
 
-def makePie(root_id, cleft_thresh, incoming=False):
+def makePie(root_id, cleft_thresh, incoming=False, config={}):
     """Create pie chart of relative synapse neuropils.
 
     Keyword arguments:
@@ -452,10 +497,22 @@ def makePie(root_id, cleft_thresh, incoming=False):
 
     # sets variable for incoming or outgoing synapses
     if incoming == True:
-        query_df = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=0,
+            post_root=root_id,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         title_name = "Incoming Synapse Neuropils"
     elif incoming == False:
-        query_df = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=root_id,
+            post_root=0,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         title_name = "Outgoing Synapse Neuropils"
 
     # counts number of synapses to use as denominator in ratios #
@@ -596,7 +653,7 @@ def makePie(root_id, cleft_thresh, incoming=False):
     return region_pie
 
 
-def makeSummaryDataFrame(root_id, cleft_thresh):
+def makeSummaryDataFrame(root_id, cleft_thresh, config={}):
     """Make dataframe with summary info.
 
     Keyword arguments:
@@ -605,11 +662,23 @@ def makeSummaryDataFrame(root_id, cleft_thresh):
     """
 
     # runs up and downstream queries and returns list with [df,message] #
-    up_query = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)
-    down_query = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)
+    up_query = getSyn(
+        pre_root=0,
+        post_root=root_id,
+        cleft_thresh=cleft_thresh,
+        datastack_name=config.get("datastack", None),
+        server_address=config.get("server_address", None),
+    )
+    down_query = getSyn(
+        pre_root=root_id,
+        post_root=0,
+        cleft_thresh=cleft_thresh,
+        datastack_name=config.get("datastack", None),
+        server_address=config.get("server_address", None),
+    )
 
     # makes df of query nucleus, upstream and downstream synapses #
-    nuc_df = getNuc(root_id)
+    nuc_df = getNuc(root_id, config=config)
     up_df = up_query[0]
     down_df = down_query[0]
 
@@ -662,7 +731,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh):
     return [full_sum_df, output_message]
 
 
-def makeViolin(root_id, cleft_thresh, incoming=False):
+def makeViolin(root_id, cleft_thresh, incoming=False, config={}):
     """Build violin plots of up- and downstream neurotransmitter values.
 
     Keyword arguments:
@@ -673,10 +742,22 @@ def makeViolin(root_id, cleft_thresh, incoming=False):
 
     # sets variable for incoming or outgoing synapses
     if incoming == False:
-        query_df = getSyn(pre_root=root_id, post_root=0, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=root_id,
+            post_root=0,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         title_name = "Outgoing Synapse NT Scores"
     elif incoming == True:
-        query_df = getSyn(pre_root=0, post_root=root_id, cleft_thresh=cleft_thresh)[0]
+        query_df = getSyn(
+            pre_root=0,
+            post_root=root_id,
+            cleft_thresh=cleft_thresh,
+            datastack_name=config.get("datastack", None),
+            server_address=config.get("server_address", None),
+        )[0]
         title_name = "Incoming Synapse NT Scores"
 
     # rounds data to 2 decimal places #
@@ -720,13 +801,15 @@ def nmToNG(coords):
     return coords
 
 
-def nucToRoot(nuc_id):
+def nucToRoot(nuc_id, config={}):
     """Convert nucleus id to root id.
 
     Keyword arguments:
     nuc_id -- 7-digit nucleus id as int
     """
-    client = CAVEclient("flywire_fafb_production")
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
     mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
         "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
