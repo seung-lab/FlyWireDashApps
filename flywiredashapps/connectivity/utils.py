@@ -11,8 +11,6 @@ import json
 from nglui.statebuilder import *
 from annotationframeworkclient import FrameworkClient
 
-# test to see if new branch works #
-
 
 def buildLink(
     query_id, up_id, down_id, cleft_thresh, nucleus, cb=False,
@@ -59,23 +57,15 @@ def buildLink(
         view_kws={"alpha_3d": 0.8},
     )
 
-    print("1. UP ID:", up_id)
-
     # creates dataframe to use for link building and handles single-partner chocies #
     if up_id[0] != 0 and down_id[0] != 0:
-        up_df = getSyn(up_id[0], query_id[0], cleft_thresh)[0]
-        down_df = getSyn(query_id[0], down_id[0], cleft_thresh)[0]
+        up_df = getSynNoCache(up_id[0], query_id[0], cleft_thresh)[0]
+        down_df = getSynNoCache(query_id[0], down_id[0], cleft_thresh)[0]
         syns_df = up_df.append(down_df, ignore_index=True,)
     elif up_id[0] == 0 and down_id[0] != 0:
-        syns_df = getSyn(query_id[0], down_id[0], cleft_thresh)[0]
+        syns_df = getSynNoCache(query_id[0], down_id[0], cleft_thresh)[0]
     elif up_id[0] != 0 and down_id[0] == 0:
-        syns_df = getSyn(up_id[0], query_id[0], cleft_thresh)[0]
-
-        print(
-            "2. COORDS AFTER GETSYN, BEFORE CONVERSION:",
-            syns_df.loc[0, "pre_pt_position"],
-        )
-
+        syns_df = getSynNoCache(up_id[0], query_id[0], cleft_thresh)[0]
     else:
         syns_df = pd.DataFrame()
 
@@ -86,8 +76,6 @@ def buildLink(
             "post": [nmToNG(x) for x in syns_df["post_pt_position"]],
         }
     )
-
-    print("3. COORDS AFTER CONVERSION: ", coords_df.loc[0, "pre"])
 
     # defines configuration for line annotations #
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
@@ -201,7 +189,7 @@ def getNuc(root_id):
 
 @lru_cache
 def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
-    """Create table of synapses for a given root id.
+    """Create a cached table of synapses for a given root id.
 
     Keyword arguments:
     pre_root -- single int-format root id number for upstream neuron (default 0)
@@ -265,7 +253,87 @@ def getSyn(pre_root=0, post_root=0, cleft_thresh=0.0):
 
     zeroot_num = len(syn_df)
 
-    print("getSyn results: ", syn_df.loc[0, "pre_pt_position"])
+    output_message = (
+        str(raw_num - cleft_num)
+        + " synapses below threshold, "
+        + str(cleft_num - aut_num)
+        + " autapses, and "
+        + str(aut_num - zeroot_num)
+        + " synapses on segments with ID '0' were removed for a total of "
+        + str(raw_num - zeroot_num)
+        + " bad synapses culled. \n"
+    )
+
+    if raw_num == 200000:
+        output_message = "!Query capped at 200K entires!\n" + output_message
+
+    return [syn_df, output_message]
+
+
+def getSynNoCache(pre_root=0, post_root=0, cleft_thresh=0.0):
+    """Create an uncached table of synapses for a given root id.
+
+    Keyword arguments:
+    pre_root -- single int-format root id number for upstream neuron (default 0)
+    post_root -- single int-format root id number for downstream neuron (default 0)
+    cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
+    """
+
+    # sets client #
+    client = CAVEclient("flywire_fafb_production")
+
+    # gets current materialization version #
+    mat_vers = max(client.materialize.get_versions())
+
+    if post_root == 0:
+        # creates df that includes neuropil regions using root id #
+        syn_df = client.materialize.join_query(
+            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
+            suffixes=["syn", "nuc"],
+            materialization_version=mat_vers,
+        )
+    elif pre_root == 0:
+        # creates df that includes neuropil regions using root id #
+        syn_df = client.materialize.join_query(
+            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
+            suffixes=["syn", "nuc"],
+            materialization_version=mat_vers,
+        )
+    else:
+        # creates df that includes neuropil regions using root id #
+        syn_df = client.materialize.join_query(
+            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            filter_in_dict={
+                "synapses_nt_v1": {
+                    "pre_pt_root_id": [pre_root],
+                    "post_pt_root_id": [post_root],
+                }
+            },
+            suffixes=["syn", "nuc"],
+            materialization_version=mat_vers,
+        )
+
+    raw_num = len(syn_df)
+
+    # removes synapses below cleft threshold #
+    syn_df = syn_df[syn_df["cleft_score"] >= cleft_thresh].reset_index(drop=True)
+
+    cleft_num = len(syn_df)
+
+    # removes autapses #
+    syn_df = syn_df[syn_df["pre_pt_root_id"] != syn_df["post_pt_root_id"]].reset_index(
+        drop=True
+    )
+
+    aut_num = len(syn_df)
+
+    # removes 0-roots #
+    syn_df = syn_df[syn_df["pre_pt_root_id"] != 0].reset_index(drop=True)
+    syn_df = syn_df[syn_df["post_pt_root_id"] != 0].reset_index(drop=True)
+
+    zeroot_num = len(syn_df)
 
     output_message = (
         str(raw_num - cleft_num)
