@@ -258,10 +258,8 @@ def register_callbacks(app, config=None):
     @app.callback(
         Output("link_button", "href",),
         Output("link_loader", "children",),
-        Input("incoming_table", "active_cell",),
-        Input("outgoing_table", "active_cell",),
-        State("incoming_table", "active_cell",),
-        State("outgoing_table", "active_cell",),
+        Input("incoming_table", "selected_rows",),
+        Input("outgoing_table", "selected_rows",),
         State("summary_table", "data",),
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
@@ -269,42 +267,36 @@ def register_callbacks(app, config=None):
         prevent_initial_call=True,
     )
     def makeLink(
-        up_dummy,
-        down_dummy,
-        up_id,
-        down_id,
-        query_data,
-        up_data,
-        down_data,
-        cleft_thresh,
+        up_rows, down_rows, query_data, up_data, down_data, cleft_thresh,
     ):
         """Create neuroglancer link using selected partners.
 
         Keyword arguments:
-        n_clicks -- tracks clicks for create button
-        up_id -- root id of upstream partner as int
-        down_id -- root id of downstream partner as int
+        up_rows -- list of selected upstream row indices
+        down_rows -- list of selected downstream row indices
         query_data -- dataframe of summary table data
         up_data -- dataframe of incoming table data
         down_data -- dataframe of outgoing table data
         cleft_thresh -- float value of cleft threshold field
         """
 
-        query_out = query_data[0]["Root ID"]
+        query_out = [query_data[0]["Root ID"]]
 
-        if up_id is None:
-            up_out = 0
+        if up_rows is None:
+            up_out = [0]
         else:
-            up_out = up_data[up_id["row"]]["Upstream Partner ID"]
-        if down_id is None:
-            down_out = 0
+            up_out = [up_data[up_rows[x]]["Upstream Partner ID"] for x in up_rows]
+        if down_rows is None:
+            down_out = [0]
         else:
-            down_out = down_data[down_id["row"]]["Downstream Partner ID"]
+            down_out = [
+                down_data[down_rows[x]]["Downstream Partner ID"] for x in down_rows
+            ]
 
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
         out_url = buildLink(
-            [query_out], [up_out], [down_out], cleft_thresh, nuc, config=config
+            query_out, up_out, down_out, cleft_thresh, nuc, config=config
         )
 
         return [out_url, ""]

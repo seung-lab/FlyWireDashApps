@@ -148,7 +148,9 @@ def page_layout(state={}):
             html.Br(),
             # defines incoming table #
             html.Div(
-                dash_table.DataTable(id="incoming_table", page_size=5,),
+                dash_table.DataTable(
+                    id="incoming_table", page_size=5, row_selectable="multi",
+                ),
                 style={
                     "margin-left": "5px",
                     "margin-right": "5px",
@@ -158,7 +160,9 @@ def page_layout(state={}):
             ),
             # defines outgoing table #
             html.Div(
-                dash_table.DataTable(id="outgoing_table", page_size=5),
+                dash_table.DataTable(
+                    id="outgoing_table", page_size=5, row_selectable="multi",
+                ),
                 style={
                     "margin-left": "5px",
                     "margin-right": "5px",
