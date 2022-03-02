@@ -94,13 +94,16 @@ def buildLink(
     else:
         syns_df = pd.DataFrame()
 
-    # makes truncated df of pre & post coords #
-    coords_df = pd.DataFrame(
-        {
-            "pre": [nmToNG(x) for x in syns_df["pre_pt_position"]],
-            "post": [nmToNG(x) for x in syns_df["post_pt_position"]],
-        }
-    )
+    if len(syns_df) > 0:
+        # makes truncated df of pre & post coords #
+        coords_df = pd.DataFrame(
+            {
+                "pre": [nmToNG(x) for x in syns_df["pre_pt_position"]],
+                "post": [nmToNG(x) for x in syns_df["post_pt_position"]],
+            }
+        )
+    else:
+        coords_df = pd.DataFrame()
 
     # defines configuration for line annotations #
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
