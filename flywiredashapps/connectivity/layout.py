@@ -128,6 +128,8 @@ def page_layout(state={}):
                 },
             ),
             html.Br(),
+            # defines div for holding download summary button #
+            html.Div(children=[], id="post_submit_download__summary"),
             # defines summary table #
             html.Div(
                 dash_table.DataTable(
@@ -145,29 +147,36 @@ def page_layout(state={}):
                     "margin-bottom": "5px",
                 },
             ),
-            html.Br(),
+            # defines div for holding upstream download button #
+            html.Div(children=[], id="post_submit_download__upstream"),
             # defines incoming table #
             html.Div(
-                dash_table.DataTable(id="incoming_table", page_size=5,),
+                dash_table.DataTable(
+                    id="incoming_table", page_size=5, row_selectable="multi",
+                ),
                 style={
                     "margin-left": "5px",
                     "margin-right": "5px",
-                    "margin-top": "5px",
-                    "margin-bottom": "5px",
+                    # "margin-top": "5px",
+                    # "margin-bottom": "5px",
                 },
             ),
+            # defines div for holding downstream download button #
+            html.Div(children=[], id="post_submit_download__downstream"),
             # defines outgoing table #
             html.Div(
-                dash_table.DataTable(id="outgoing_table", page_size=5),
+                dash_table.DataTable(
+                    id="outgoing_table", page_size=5, row_selectable="multi",
+                ),
                 style={
                     "margin-left": "5px",
                     "margin-right": "5px",
-                    "margin-top": "5px",
-                    "margin-bottom": "5px",
+                    # "margin-top": "5px",
+                    # "margin-bottom": "5px",
                 },
             ),
-            # defines div for holding post-submission buttons #
-            html.Div(children=[], id="post_submit_div"),
+            # defines div for holding post-submission download buttons #
+            html.Div(children=[], id="post_submit_linkbuilder_buttons"),
         ]
     )
 

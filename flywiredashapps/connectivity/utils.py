@@ -12,7 +12,7 @@ from ..common import lookup_utilities
 
 
 def buildLink(
-    query_id, up_id, down_id, cleft_thresh, nucleus, cb=False, config={},
+    query_id, up_ids, down_ids, cleft_thresh, nucleus, cb=False, config={},
 ):
     """Generate NG link.
 
@@ -36,9 +36,9 @@ def buildLink(
         down_color = "#ffff00"  # yellow #
 
     # builds id and color lists #
-    id_list = query_id + up_id + down_id
-    up_cols = [up_color] * len(up_id)
-    down_cols = [down_color] * len(down_id)
+    id_list = query_id + up_ids + down_ids
+    up_cols = [up_color] * len(up_ids)
+    down_cols = [down_color] * len(down_ids)
     color_list = [query_color] + up_cols + down_cols
 
     # sets client using flywire production datastack #
@@ -58,39 +58,49 @@ def buildLink(
         view_kws={"alpha_3d": 0.8},
     )
 
-    # creates dataframe to use for link building and handles single-partner chocies #
-    if up_id[0] != 0 and down_id[0] != 0:
-        up_df = getSynNoCache(
-            up_id[0],
-            query_id[0],
-            cleft_thresh,
-            datastack_name=config.get("datastack", None),
-            server_address=config.get("server_address", None),
-        )[0]
-        down_df = getSynNoCache(
-            query_id[0],
-            down_id[0],
-            cleft_thresh,
-            datastack_name=config.get("datastack", None),
-            server_address=config.get("server_address", None),
-        )[0]
-        syns_df = up_df.append(down_df, ignore_index=True,)
-    elif up_id[0] == 0 and down_id[0] != 0:
-        syns_df = getSynNoCache(
-            query_id[0],
-            down_id[0],
-            cleft_thresh,
-            datastack_name=config.get("datastack", None),
-            server_address=config.get("server_address", None),
-        )[0]
-    elif up_id[0] != 0 and down_id[0] == 0:
-        syns_df = getSynNoCache(
-            up_id[0],
-            query_id[0],
-            cleft_thresh,
-            datastack_name=config.get("datastack", None),
-            server_address=config.get("server_address", None),
-        )[0]
+    # creates dataframe to use for link building and handles single-partner choices #
+    if up_ids[0] != 0 and down_ids[0] != 0:
+        syns_df = pd.DataFrame()
+        for x in up_ids:
+            row_df = getSynNoCache(
+                x,
+                query_id[0],
+                cleft_thresh,
+                datastack_name=config.get("datastack", None),
+                server_address=config.get("server_address", None),
+            )[0]
+            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+        for x in down_ids:
+            row_df = getSynNoCache(
+                query_id[0],
+                x,
+                cleft_thresh,
+                datastack_name=config.get("datastack", None),
+                server_address=config.get("server_address", None),
+            )[0]
+            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+    elif up_ids[0] == 0 and down_ids[0] != 0:
+        syns_df = pd.DataFrame()
+        for x in down_ids:
+            row_df = getSynNoCache(
+                query_id[0],
+                x,
+                cleft_thresh,
+                datastack_name=config.get("datastack", None),
+                server_address=config.get("server_address", None),
+            )[0]
+            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+    elif up_ids[0] != 0 and down_ids[0] == 0:
+        syns_df = pd.DataFrame()
+        for x in up_ids:
+            row_df = getSynNoCache(
+                x,
+                query_id[0],
+                cleft_thresh,
+                datastack_name=config.get("datastack", None),
+                server_address=config.get("server_address", None),
+            )[0]
+            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
     else:
         syns_df = pd.DataFrame()
 
