@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 
-def getNuc(root_id):
+def getNuc(root_id, config):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
@@ -61,7 +61,7 @@ def inputToRootList(input_str):
     return root_list
 
 
-def coordsToRoot(coords):
+def coordsToRoot(coords, config={}):
     """Convert coordinates in 4,4,40 nm resolution to root id.
 
     Keyword arguments:
@@ -114,7 +114,7 @@ def nmToNG(coords):
     return coords
 
 
-def nucToRoot(nuc_id):
+def nucToRoot(nuc_id, config={}):
     """Convert nucleus id to root id.
 
     Keyword arguments:
@@ -131,7 +131,7 @@ def nucToRoot(nuc_id):
     return root_id
 
 
-def rootListToDataFrame(root_list):
+def rootListToDataFrame(root_list, config={}):
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
