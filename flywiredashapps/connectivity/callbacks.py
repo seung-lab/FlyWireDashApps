@@ -5,14 +5,14 @@ from nglui.statebuilder import *
 import time
 from .utils import *
 
-# defines blank app object and uses stylesheet for bootstrap themes #
-app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-
 
 def register_callbacks(app, config=None):
     # defines callback that generates main tables and violin plots #
     @app.callback(
-        Output("post_submit_div", "children"),
+        Output("post_submit_download__summary", "children"),
+        Output("post_submit_download__upstream", "children"),
+        Output("post_submit_download__downstream", "children"),
+        Output("post_submit_linkbuilder_buttons", "children"),
         Output("summary_table", "columns"),
         Output("summary_table", "data"),
         Output("incoming_table", "columns"),
@@ -38,62 +38,56 @@ def register_callbacks(app, config=None):
         val_choice -- boolean option to validate synapse counts
         """
 
-        post_div = [
-            # defines summary downloader #
+        post_div_linkbuttons = [
             html.Div(
                 [
                     # defines link generation button #
-                    html.Div(
-                        children=[
-                            dbc.Button(
-                                "Generate NG Link Using Selected Partners",
-                                id="link_button",
-                                n_clicks=0,
-                                style={
-                                    "margin-top": "5px",
-                                    "margin-right": "5px",
-                                    "margin-left": "5px",
-                                    "margin-bottom": "5px",
-                                    "width": "420px",
-                                },
-                            ),
-                        ],
+                    dbc.Button(
+                        "Generate NG Link Using Selected Partners",
+                        id="link_button",
+                        n_clicks=0,
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "400px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
                     ),
-                    html.Div(
-                        children=[
-                            # defines button to clear table selections #
-                            dbc.Button(
-                                "Clear Partner Selections",
-                                id="clear_button",
-                                n_clicks=0,
-                                color="danger",
-                                style={
-                                    "width": "420px",
-                                    "margin-right": "5px",
-                                    "margin-left": "5px",
-                                    "margin-top": "5px",
-                                    "margin-bottom": "25px",
-                                },
-                            ),
-                        ],
+                    # defines button to clear table selections #
+                    dbc.Button(
+                        "Clear Partner Selections",
+                        id="clear_button",
+                        n_clicks=0,
+                        color="danger",
+                        style={
+                            "width": "400px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "25px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
                     ),
+                    # defines link button loader #
                     html.Div(
-                        children=[
-                            # defines link button loader #
-                            html.Div(
-                                dcc.Loading(
-                                    id="link_loader", type="default", children=""
-                                ),
-                                style={
-                                    "margin-right": "5px",
-                                    "margin-left": "5px",
-                                    "width": "1000px",
-                                },
-                            ),
-                        ],
+                        dcc.Loading(id="link_loader", type="default", children=""),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
                     ),
-                ]
+                ],
+                # style={"display": "inline-block",},
             ),
+        ]
+
+        post_sum = [
+            # defines summary downloader #
             html.Div(
                 [
                     dbc.Button(
@@ -106,11 +100,15 @@ def register_callbacks(app, config=None):
                             "margin-left": "5px",
                             "margin-top": "5px",
                             "margin-bottom": "5px",
+                            # "background-color": "#51825c",
+                            # "border-color": "#51825c",
                         },
                     ),
                 ]
             ),
             dcc.Download(id="summary_download"),
+        ]
+        post_up = [
             # defines upstream downloader #
             html.Div(
                 [
@@ -124,11 +122,15 @@ def register_callbacks(app, config=None):
                             "margin-left": "5px",
                             "margin-top": "5px",
                             "margin-bottom": "5px",
+                            # "background-color": "#51825c",
+                            # "border-color": "#51825c",
                         },
                     ),
                 ]
             ),
             dcc.Download(id="upstream_download"),
+        ]
+        post_down = [
             # defines downstream downloader #
             html.Div(
                 [
@@ -142,6 +144,8 @@ def register_callbacks(app, config=None):
                             "margin-left": "5px",
                             "margin-top": "5px",
                             "margin-bottom": "5px",
+                            # "background-color": "#51825c",
+                            # "border-color": "#51825c",
                         },
                     ),
                 ]
@@ -201,7 +205,6 @@ def register_callbacks(app, config=None):
                     dcc.Graph(id="outgoing_figure", figure=down_violin,),
                     style={"display": "inline-block",},
                 ),
-                # html.Br(),
                 html.Div(
                     dcc.Graph(id="in_pie_chart", figure=up_pie,),
                     style={"display": "inline-block",},
@@ -226,7 +229,10 @@ def register_callbacks(app, config=None):
             message_rows = message_text.count("\n")
 
             return [
-                post_div,
+                post_sum,
+                post_up,
+                post_down,
+                post_div_linkbuttons,
                 sum_cols,
                 sum_data,
                 up_cols,
@@ -242,15 +248,19 @@ def register_callbacks(app, config=None):
         # returns error message if 1-item threshold is exceeded #
         else:
             return [
-                "",
+                [],
+                [],
+                [],
+                [],
                 0,
                 0,
                 0,
                 0,
                 0,
                 0,
-                "",
+                [],
                 "Please limit each query to one entry.",
+                1,
                 "",
             ]
 
@@ -307,6 +317,8 @@ def register_callbacks(app, config=None):
         Output("outgoing_table", "active_cell",),
         Output("incoming_table", "selected_cells",),
         Output("outgoing_table", "selected_cells",),
+        Output("incoming_table", "selected_rows",),
+        Output("outgoing_table", "selected_rows",),
         Input("clear_button", "n_clicks",),
         prevent_initial_call=True,
     )
@@ -319,6 +331,8 @@ def register_callbacks(app, config=None):
         return [
             None,
             None,
+            [],
+            [],
             [],
             [],
         ]
