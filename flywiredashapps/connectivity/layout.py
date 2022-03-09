@@ -7,16 +7,16 @@ from ..common.dash_url_helper import create_component_kwargs, State
 
 title = "Fly Connectivity Viewer"
 
+# sets id of url string and ??? #
 url_bar_and_content_div = html.Div(
     [dcc.Location(id="url", refresh=False), html.Div(id="page-layout")]
 )
 
-
+# defines function to set page layout #
 def page_layout(state={}):
     # defines layout of various app elements #
     layout = html.Div(
         [
-            # defines text area for instructions and feedback#
             html.Div(
                 dbc.Textarea(
                     id="message_text",
@@ -154,12 +154,7 @@ def page_layout(state={}):
                 dash_table.DataTable(
                     id="incoming_table", page_size=5, row_selectable="multi",
                 ),
-                style={
-                    "margin-left": "5px",
-                    "margin-right": "5px",
-                    # "margin-top": "5px",
-                    # "margin-bottom": "5px",
-                },
+                style={"margin-left": "5px", "margin-right": "5px",},
             ),
             # defines div for holding downstream download button #
             html.Div(children=[], id="post_submit_download__downstream"),
@@ -168,12 +163,7 @@ def page_layout(state={}):
                 dash_table.DataTable(
                     id="outgoing_table", page_size=5, row_selectable="multi",
                 ),
-                style={
-                    "margin-left": "5px",
-                    "margin-right": "5px",
-                    # "margin-top": "5px",
-                    # "margin-bottom": "5px",
-                },
+                style={"margin-left": "5px", "margin-right": "5px",},
             ),
             # defines div for holding post-submission download buttons #
             html.Div(children=[], id="post_submit_linkbuilder_buttons"),

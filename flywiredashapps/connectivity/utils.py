@@ -196,7 +196,7 @@ def getNuc(root_id, config={}):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
-    root_id -- root or nucleus id formatted as listed str
+    root_id -- root or nucleus id formatted as int
     """
 
     # sets client #
@@ -399,7 +399,7 @@ def getSynNoCache(
 
 
 def idConvert(id_val, config):
-    """Identify id type and convert to root if necessary
+    """Identify id type and convert to root if necessary. Return 0 on bad id.
 
     Keyword arguments:
     id -- root id, nuc id, or xyz coords
@@ -418,7 +418,10 @@ def idConvert(id_val, config):
     if len(str(id_val)) == 7:
         id_val = nucToRoot(id_val, config=config)
 
-    return id_val
+    if len(str(id_val)) == 18:
+        return id_val
+    else:
+        return 0
 
 
 def makePartnerDataFrame(root_id, cleft_thresh, upstream=False, config={}):
@@ -827,5 +830,8 @@ def nucToRoot(nuc_id, config={}):
     nuc_df = client.materialize.query_table(
         "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
     )
-    root_id = int(nuc_df.loc[0, "pt_root_id"])
+    try:
+        root_id = int(nuc_df.loc[0, "pt_root_id"])
+    except:
+        root_id = 0
     return root_id
