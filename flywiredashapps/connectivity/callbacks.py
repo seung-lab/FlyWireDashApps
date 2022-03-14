@@ -48,6 +48,7 @@ def register_callbacks(app, config=None):
                             "Generate NG Link Using Selected Partners",
                             id="link_button",
                             n_clicks=0,
+                            target="tab",
                             style={
                                 "margin-top": "5px",
                                 "margin-right": "5px",
