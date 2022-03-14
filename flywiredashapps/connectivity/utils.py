@@ -47,11 +47,11 @@ def buildLink(
     )
 
     # sets configuration for EM layer #
-    img = ImageLayerConfig(client.info.image_source())
+    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
 
     # sets configuration for segmentation layer #
     seg = SegmentationLayerConfig(
-        name="seg",
+        name="Production-segmentation_with_graph",
         source=client.info.segmentation_source(),
         fixed_ids=id_list,
         fixed_id_colors=color_list,
