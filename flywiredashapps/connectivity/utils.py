@@ -25,15 +25,15 @@ def buildLink(
     cb -- boolean option to make colorblind-friendly (default False)
     """
 
-    # checks for colorblind option, sets color #
-    if cb:
+    # checks for currently unused colorblind option, sets color #
+    if cb == True:
         up_color = "#ffffff"  # white #
         query_color = "#999999"  # 40% grey #
         down_color = "#323232"  # 80% grey #
     else:
-        up_color = "#00ffff"  # cyan #
+        up_color = "#ffff00"  # yellow #
         query_color = "#ff00ff"  # magenta #
-        down_color = "#ffff00"  # yellow #
+        down_color = "#00ffff"  # cyan #
 
     # builds id and color lists #
     id_list = query_id + up_ids + down_ids
@@ -60,7 +60,8 @@ def buildLink(
 
     # creates dataframe to use for link building and handles single-partner choices #
     if up_ids[0] != 0 and down_ids[0] != 0:
-        syns_df = pd.DataFrame()
+        up_syns_df = pd.DataFrame()
+        down_syns_df = pd.DataFrame()
         for x in up_ids:
             row_df = getSynNoCache(
                 x,
@@ -69,7 +70,7 @@ def buildLink(
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
             )[0]
-            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
         for x in down_ids:
             row_df = getSynNoCache(
                 query_id[0],
@@ -78,9 +79,10 @@ def buildLink(
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
             )[0]
-            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
     elif up_ids[0] == 0 and down_ids[0] != 0:
-        syns_df = pd.DataFrame()
+        up_syns_df = pd.DataFrame()
+        down_syns_df = pd.DataFrame()
         for x in down_ids:
             row_df = getSynNoCache(
                 query_id[0],
@@ -89,9 +91,10 @@ def buildLink(
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
             )[0]
-            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
     elif up_ids[0] != 0 and down_ids[0] == 0:
-        syns_df = pd.DataFrame()
+        up_syns_df = pd.DataFrame()
+        down_syns_df = pd.DataFrame()
         for x in up_ids:
             row_df = getSynNoCache(
                 x,
@@ -100,26 +103,42 @@ def buildLink(
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
             )[0]
-            syns_df = pd.concat([syns_df, row_df], ignore_index=True,)
+            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
     else:
-        syns_df = pd.DataFrame()
+        up_syns_df = pd.DataFrame()
+        down_syns_df = pd.DataFrame()
 
-    if len(syns_df) > 0:
+    if len(up_syns_df) > 0:
         # makes truncated df of pre & post coords #
-        coords_df = pd.DataFrame(
+        up_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in syns_df["post_pt_position"]],
+                "pre": [nmToNG(x) for x in up_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x) for x in up_syns_df["post_pt_position"]],
             }
         )
     else:
-        coords_df = pd.DataFrame()
+        up_coords_df = pd.DataFrame()
+    if len(down_syns_df) > 0:
+        # makes truncated df of pre & post coords #
+        down_coords_df = pd.DataFrame(
+            {
+                "pre": [nmToNG(x) for x in down_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x) for x in down_syns_df["post_pt_position"]],
+            }
+        )
+    else:
+        down_coords_df = pd.DataFrame()
 
     # defines configuration for line annotations #
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
 
     # defines configuration for annotation layer #
-    anno = AnnotationLayerConfig(name="synapses", mapping_rules=lines,)
+    up_anno = AnnotationLayerConfig(
+        name="Incoming Synapses", color="#FF8800", mapping_rules=lines,
+    )
+    down_anno = AnnotationLayerConfig(
+        name="Outgoing Synapses", color="#8800FF", mapping_rules=lines,
+    )
 
     # sets view to nucelus of query cell #
     # defaults to center of dataset if no input #
@@ -135,11 +154,15 @@ def buildLink(
         }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
-    sb = StateBuilder([img, seg, anno,], view_kws=view_options,)
+    up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
+    down_sb = StateBuilder([down_anno])
+    chained_sb = ChainedStateBuilder([up_sb, down_sb])
 
     # renders state as json and converts dumped json produced by #
     # render_state into non-dumped version using json.loads() #
-    state_json = json.loads(sb.render_state(coords_df, return_as="json",))
+    state_json = json.loads(
+        chained_sb.render_state([up_coords_df, down_coords_df], return_as="json",)
+    )
 
     # feeds state_json into state uploader to set the value of 'new_id' #
     new_id = client.state.upload_state_json(state_json)

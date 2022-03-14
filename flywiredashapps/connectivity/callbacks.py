@@ -75,6 +75,12 @@ def register_callbacks(app, config=None):
                                 "vertical-align": "top",
                             },
                         ),
+                        # unused colorblind option checkbox #
+                        # dbc.Checklist(
+                        #     options=[{"label": "Colorblind", "value": True},],
+                        #     value=[False],
+                        #     id="cb_input",
+                        # ),
                         # defines link button loader #
                         html.Div(
                             dcc.Loading(id="link_loader", type="default", children=""),
@@ -317,9 +323,7 @@ def register_callbacks(app, config=None):
         State("cleft_thresh_field", "value",),
         prevent_initial_call=True,
     )
-    def makeLink(
-        up_rows, down_rows, query_data, up_data, down_data, cleft_thresh,
-    ):
+    def makeLink(up_rows, down_rows, query_data, up_data, down_data, cleft_thresh):
         """Create neuroglancer link using selected partners.
 
         Keyword arguments:
@@ -329,6 +333,7 @@ def register_callbacks(app, config=None):
         up_data -- dataframe of incoming table data
         down_data -- dataframe of outgoing table data
         cleft_thresh -- float value of cleft threshold field
+        cb -- bool to determine colorblind option
         """
 
         query_out = [query_data[0]["Root ID"]]
