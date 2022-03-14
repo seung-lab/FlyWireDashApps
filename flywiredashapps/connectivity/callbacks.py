@@ -205,27 +205,9 @@ def register_callbacks(app, config=None):
                 down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
 
                 # assigns df values to 'cols' and 'data' for passing to dash table #
-                sum_cols = [
-                    {
-                        "name": i,
-                        "id": i,
-                    }
-                    for i in sum_df.columns
-                ]
-                up_cols = [
-                    {
-                        "name": i,
-                        "id": i,
-                    }
-                    for i in up_df.columns
-                ]
-                down_cols = [
-                    {
-                        "name": i,
-                        "id": i,
-                    }
-                    for i in down_df.columns
-                ]
+                sum_cols = [{"name": i, "id": i,} for i in sum_df.columns]
+                up_cols = [{"name": i, "id": i,} for i in up_df.columns]
+                down_cols = [{"name": i, "id": i,} for i in down_df.columns]
                 sum_data = sum_df.to_dict("records")
                 up_data = up_df.to_dict("records")
                 down_data = down_df.to_dict("records")
@@ -233,38 +215,20 @@ def register_callbacks(app, config=None):
                 # builds list of figures to pass to children of graph_div #
                 figs = [
                     html.Div(
-                        dcc.Graph(
-                            id="incoming_figure",
-                            figure=up_violin,
-                        ),
+                        dcc.Graph(id="incoming_figure", figure=up_violin,),
                         style={"display": "inline-block"},
                     ),
                     html.Div(
-                        dcc.Graph(
-                            id="outgoing_figure",
-                            figure=down_violin,
-                        ),
-                        style={
-                            "display": "inline-block",
-                        },
+                        dcc.Graph(id="outgoing_figure", figure=down_violin,),
+                        style={"display": "inline-block",},
                     ),
                     html.Div(
-                        dcc.Graph(
-                            id="in_pie_chart",
-                            figure=up_pie,
-                        ),
-                        style={
-                            "display": "inline-block",
-                        },
+                        dcc.Graph(id="in_pie_chart", figure=up_pie,),
+                        style={"display": "inline-block",},
                     ),
                     html.Div(
-                        dcc.Graph(
-                            id="out_pie_chart",
-                            figure=down_pie,
-                        ),
-                        style={
-                            "display": "inline-block",
-                        },
+                        dcc.Graph(id="out_pie_chart", figure=down_pie,),
+                        style={"display": "inline-block",},
                     ),
                 ]
 
@@ -342,47 +306,18 @@ def register_callbacks(app, config=None):
 
     # defines callback that generates neuroglancer link #
     @app.callback(
-        Output(
-            "link_button",
-            "href",
-        ),
-        Output(
-            "link_loader",
-            "children",
-        ),
-        Input(
-            "incoming_table",
-            "selected_rows",
-        ),
-        Input(
-            "outgoing_table",
-            "selected_rows",
-        ),
-        State(
-            "summary_table",
-            "data",
-        ),
-        State(
-            "incoming_table",
-            "data",
-        ),
-        State(
-            "outgoing_table",
-            "data",
-        ),
-        State(
-            "cleft_thresh_field",
-            "value",
-        ),
+        Output("link_button", "href",),
+        Output("link_loader", "children",),
+        Input("incoming_table", "selected_rows",),
+        Input("outgoing_table", "selected_rows",),
+        State("summary_table", "data",),
+        State("incoming_table", "data",),
+        State("outgoing_table", "data",),
+        State("cleft_thresh_field", "value",),
         prevent_initial_call=True,
     )
     def makeLink(
-        up_rows,
-        down_rows,
-        query_data,
-        up_data,
-        down_data,
-        cleft_thresh,
+        up_rows, down_rows, query_data, up_data, down_data, cleft_thresh,
     ):
         """Create neuroglancer link using selected partners.
 
@@ -397,11 +332,11 @@ def register_callbacks(app, config=None):
 
         query_out = [query_data[0]["Root ID"]]
 
-        if up_rows is None:
+        if up_rows == [] or up_rows == None:
             up_out = [0]
         else:
             up_out = [up_data[up_rows[x]]["Upstream Partner ID"] for x in up_rows]
-        if down_rows is None:
+        if down_rows == [] or down_rows == None:
             down_out = [0]
         else:
             down_out = [
@@ -418,34 +353,13 @@ def register_callbacks(app, config=None):
 
     # defines callback that clears table selections #
     @app.callback(
-        Output(
-            "incoming_table",
-            "active_cell",
-        ),
-        Output(
-            "outgoing_table",
-            "active_cell",
-        ),
-        Output(
-            "incoming_table",
-            "selected_cells",
-        ),
-        Output(
-            "outgoing_table",
-            "selected_cells",
-        ),
-        Output(
-            "incoming_table",
-            "selected_rows",
-        ),
-        Output(
-            "outgoing_table",
-            "selected_rows",
-        ),
-        Input(
-            "clear_button",
-            "n_clicks",
-        ),
+        Output("incoming_table", "active_cell",),
+        Output("outgoing_table", "active_cell",),
+        Output("incoming_table", "selected_cells",),
+        Output("outgoing_table", "selected_cells",),
+        Output("incoming_table", "selected_rows",),
+        Output("outgoing_table", "selected_rows",),
+        Input("clear_button", "n_clicks",),
         prevent_initial_call=True,
     )
     def clearSelected(n_clicks):
