@@ -23,6 +23,7 @@ def buildLink(
     cleft_thresh -- cleft score threshold to drop synapses as float
     nucleus -- x,y,z coordinates of query nucleus as list of ints
     cb -- boolean option to make colorblind-friendly (default False)
+    config -- dictionary of config settings (default {})
     """
 
     # checks for currently unused colorblind option, sets color #
@@ -40,6 +41,9 @@ def buildLink(
     up_cols = [up_color] * len(up_ids)
     down_cols = [down_color] * len(down_ids)
     color_list = [query_color] + up_cols + down_cols
+
+    # builds nuc coords df using root id list #
+    nuc_coords_df = rootsToNucCoords(id_list, config)
 
     # sets client using flywire production datastack #
     client = lookup_utilities.make_client(
@@ -129,15 +133,19 @@ def buildLink(
     else:
         down_coords_df = pd.DataFrame()
 
-    # defines configuration for line annotations #
+    # defines configuration for point & line annotations #
+    points = PointMapper(point_column="pt_position")
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
 
-    # defines configuration for annotation layer #
+    # defines configuration for annotation layers #
     up_anno = AnnotationLayerConfig(
         name="Incoming Synapses", color="#FF8800", mapping_rules=lines,
     )
     down_anno = AnnotationLayerConfig(
         name="Outgoing Synapses", color="#8800FF", mapping_rules=lines,
+    )
+    nuc_anno = AnnotationLayerConfig(
+        name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
     )
 
     # sets view to nucelus of query cell #
@@ -156,12 +164,15 @@ def buildLink(
     # defines 'sb' by passing in rules for img, seg, and anno layers #
     up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
     down_sb = StateBuilder([down_anno])
-    chained_sb = ChainedStateBuilder([up_sb, down_sb])
+    nuc_sb = StateBuilder([nuc_anno])
+    chained_sb = ChainedStateBuilder([up_sb, down_sb, nuc_sb])
 
     # renders state as json and converts dumped json produced by #
     # render_state into non-dumped version using json.loads() #
     state_json = json.loads(
-        chained_sb.render_state([up_coords_df, down_coords_df], return_as="json",)
+        chained_sb.render_state(
+            [up_coords_df, down_coords_df, nuc_coords_df], return_as="json",
+        )
     )
 
     # feeds state_json into state uploader to set the value of 'new_id' #
@@ -180,6 +191,7 @@ def coordsToRoot(coords, config={}):
 
     Keyword arguments:
     coords -- list of x,y,z coordinates in 4,4,40 nm resolution
+    config -- dictionary of config settings (default {})
     """
 
     # converts coordinates to ints #
@@ -220,6 +232,7 @@ def getNuc(root_id, config={}):
 
     Keyword arguments:
     root_id -- root or nucleus id formatted as int
+    config -- dictionary of config settings (default {})
     """
 
     # sets client #
@@ -426,6 +439,7 @@ def idConvert(id_val, config):
 
     Keyword arguments:
     id -- root id, nuc id, or xyz coords
+    config -- dictionary of config settings
     """
     # converts coordinates or list-format input into non-listed int
     if type(id_val) == list:
@@ -454,6 +468,7 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False, config={}):
     root_id -- 18-digit int-format root id number
     cleft_thresh -- float-format cleft score threshold
     upstream -- Boolean that determines whether df is upstream or downstream (default False)
+    config -- dictionary of config settings (default {})
     """
 
     # makes df of queried neuron synapses #
@@ -532,6 +547,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}):
     root_id -- single int-format root id number
     cleft_thresh -- float-format cleft score threshold to drop synapses
     incoming -- boolean to specify incoming or outgoing synapses (default False)
+    config -- dictionary of config settings (default {})
     """
 
     # sets variable for incoming or outgoing synapses
@@ -698,6 +714,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}):
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     cleft_thresh -- float-format cleft score threshold
+    config -- dictionary of config settings (default {})
     """
 
     # runs up and downstream queries and returns list with [df,message] #
@@ -777,6 +794,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}):
     root_id -- single int-format root id number
     cleft_thresh -- float-format cleft score threshold to drop synapses
     incoming -- boolean to specify incoming or outgoing synapses (default False)
+    config -- dictionary of config settings (default {})
     """
 
     # sets variable for incoming or outgoing synapses
@@ -845,6 +863,7 @@ def nucToRoot(nuc_id, config={}):
 
     Keyword arguments:
     nuc_id -- 7-digit nucleus id as int
+    config -- dictionary of config settings (default {})
     """
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
@@ -858,3 +877,36 @@ def nucToRoot(nuc_id, config={}):
     except:
         root_id = 0
     return root_id
+
+
+def rootsToNucCoords(roots, config={}):
+    """Convert list of root ids to one-column df of nucleus coordinates.
+    
+    Keyword Arguments:
+    roots -- list of int-format root ids
+    config -- dictionary of config settings (default {})
+    """
+    # sets client #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # gets current materialization version #
+    mat_vers = max(client.materialize.get_versions())
+
+    # drops 0-roots #
+    roots = [x for x in roots if x != 0]
+
+    # queries nucleus table using root id #
+    nuc_df = client.materialize.query_table(
+        "nuclei_v1",
+        filter_in_dict={"pt_root_id": roots},
+        materialization_version=mat_vers,
+    )
+
+    # converts nucleus coordinates from nm to 4x4x40 resolution #
+    nuc_coords_df = pd.DataFrame(
+        {"pt_position": [nmToNG(i) for i in nuc_df["pt_position"]]}
+    )
+
+    return nuc_coords_df
