@@ -105,6 +105,7 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
         Output("url", "search"),
         # NOTE currently only support property="value"...
         Input({"type": _COMPONENT_ID_TYPE, "id_inner": ALL}, "value"),
+        prevent_initial_call=True,
     )
     def update_url_state(values):
         """Updates URL from component values."""
@@ -121,7 +122,7 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
             state[_param_string(id_inner, input["property"])] = _myrepr(input["value"])
 
         params = urlencode(state, safe="%/:?~#+!$,;'@()*[]\"", quote_via=quote)
-
+        print("!!!PARAMS:", params, "!!!")
         print(f"update_url_state values={values} params={params}")
         return f"?{params}"
 
