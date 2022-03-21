@@ -458,6 +458,26 @@ def register_callbacks(app, config=None):
         except:
             return ["", 0]
 
+    # defines callback to feed input root id into url query parameter #
+    @app.callback(
+        Output("url", "pathname"),
+        Input("submit_button", "n_clicks"),
+        State("input_field", "value"),
+        prevent_initial_call=True,
+    )
+    def inputToSearch(n_clicks, root_id):
+        """Convert root id into url string.
+
+        Keyword Arguments:
+        n_clicks -- used to trigger on submission
+        root_id -- root id (can be anything)
+        """
+
+        if root_id == "":
+            return "http://127.0.0.1:8050"
+        else:
+            return "http://127.0.0.1:8050/?root_id=" + str(root_id)
+
     pass
 
 
