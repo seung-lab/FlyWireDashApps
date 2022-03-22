@@ -472,8 +472,6 @@ def register_callbacks(app, config=None):
         else:
             core_address = url_href
 
-        print("CORE:", core_address)
-
         core_with_query = (
             core_address
             + "?root_id="
@@ -481,8 +479,6 @@ def register_callbacks(app, config=None):
             + "&cleft_thresh="
             + str(cleft_thresh)
         )
-
-        print("CWQ:", core_with_query)
 
         # returns core address if no input given, otherwise, adds input as query #
         if len(root_id) > 0:
