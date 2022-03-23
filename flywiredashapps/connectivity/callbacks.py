@@ -1,6 +1,7 @@
 # Connectivity App #
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
+from caveclient import chunkedgraph
 import dash_bootstrap_components as dbc
 from nglui.statebuilder import *
 import time
@@ -160,18 +161,39 @@ def register_callbacks(app, config=None):
             # splits 'ids' string into list #
             query_id = str(query_id).split(",")
 
-            # strips spaces from id_list entries and converts to integers #
+            # strips spaces and brackets from id_list entries and converts to integers #
             query_id = [str(x.strip(" ")) for x in query_id]
+            query_id = [str(x.strip("[")) for x in query_id]
+            query_id = [int(str(x.strip("]"))) for x in query_id]
 
             # builds output if 1-item threshold isn't exceeded #
             if (
                 len(query_id) == 1
                 or len(query_id) == 3
-                and len(query_id[0]) != len(query_id[2])
+                and len(str(query_id[0])) != len(str(query_id[2]))
             ):
 
                 # converts id input to root id #
                 root_id = idConvert(query_id, config=config)
+
+                # throws error if root id is outdated #
+                if checkFreshness(root_id, config=config) == False:
+                    return [
+                        [],
+                        [],
+                        [],
+                        [],
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        [],
+                        "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
+                        1,
+                        "",
+                    ]
 
                 # should handle cases with bad ids, currently circumvented #
                 if root_id == 0:

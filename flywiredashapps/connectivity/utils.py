@@ -7,6 +7,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import json
+import time
 from nglui.statebuilder import *
 from ..common import lookup_utilities
 
@@ -184,6 +185,23 @@ def buildLink(
     )
 
     return url
+
+
+def checkFreshness(root_id, config={}):
+    """Check to see if root id is outdated.
+    
+    Keyword arguments:
+    root_id -- 18-digit int-format root id number
+    config -- dictionary of config settings (default {})
+    """
+
+    # sets client #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # returns True if root id is current, False if not #
+    return client.chunkedgraph.is_latest_roots(root_id)
 
 
 def coordsToRoot(coords, config={}):
@@ -448,7 +466,7 @@ def idConvert(id_val, config):
         else:
             id_val = int(id_val[0])
 
-    elif type(id_val) == str or type(id_val) == float:
+    if (type(id_val) == str) or (type(id_val) == float):
         id_val = int(id_val)
 
     # converts nucleus id to root id #
