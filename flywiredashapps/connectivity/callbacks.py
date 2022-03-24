@@ -518,6 +518,6 @@ def register_callbacks(app, config=None):
     pass
 
 
-# runs program, may be able to choose server by using port= argument? #
+# runs program #
 if __name__ == "__main__":
     app.run_server()

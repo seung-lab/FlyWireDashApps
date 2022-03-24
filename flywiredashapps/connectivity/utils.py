@@ -886,6 +886,7 @@ def nucToRoot(nuc_id, config={}):
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
+
     mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
         "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,

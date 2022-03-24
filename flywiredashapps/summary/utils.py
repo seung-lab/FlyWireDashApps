@@ -4,11 +4,12 @@ import pandas as pd
 import numpy as np
 
 
-def getNuc(root_id, config):
+def getNuc(root_id, config={}):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
     root_id -- root or nucleus id formatted as listed str
+    config -- dictionary of config settings (default {})
     """
 
     # sets client #
@@ -41,11 +42,12 @@ def getNuc(root_id, config):
     return out_df.astype(str)
 
 
-def inputToRootList(input_str):
+def inputToRootList(input_str, config={}):
     """Convert input string into list of int root ids.
 
     Keyword arguments:
     input_str -- string of ids or 4,4,40nm coords separated by ,
+    config -- dictionary of config settings (default {})
     """
     # splits input_str into list and strips spaces #
     input_list = [x.strip(" ") for x in str(input_str).split(",")]
@@ -54,10 +56,10 @@ def inputToRootList(input_str):
         root_list = [int(i) for i in input_list]
     # if ids are nucs #
     elif all([len(i) == 7 for i in input_list]):
-        root_list = [nucToRoot(int(i)) for i in input_list]
+        root_list = [nucToRoot(int(i), config) for i in input_list]
     # if id is coordinates #
     elif len(input_list) % 3 == 0:
-        root_list = [coordsToRoot(input_list)]
+        root_list = [coordsToRoot(input_list, config)]
     return root_list
 
 
@@ -159,7 +161,7 @@ def rootListToDataFrame(root_list, config={}):
         proofreader_list = np.unique(change_df["user_id"])
         proofreaders = ", ".join([str(i) for i in proofreader_list])
 
-        row_df = getNuc(i)
+        row_df = getNuc(i, config)
 
         # handles segments without nuclei #
         if row_df.empty:
