@@ -45,7 +45,7 @@ def page_layout(state={}):
                         id="input_message_text",
                         value="Root/nucleus ID or x,y,z coords:",
                         style={
-                            "width": "230px",
+                            "width": "242px",
                             "resize": "none",
                             "display": "inline-block",
                             "vertical-align": "top",
@@ -59,7 +59,7 @@ def page_layout(state={}):
                         type="text",
                         placeholder="Root/Nuc ID or Coords",
                         style={
-                            "width": "190px",
+                            "width": "178px",
                             "display": "inline-block",
                             "vertical-align": "top",
                         },
