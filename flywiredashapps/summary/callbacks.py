@@ -40,7 +40,10 @@ def register_callbacks(app, config=None):
             dcc.Download(id="summary_download"),
         ]
 
+        # generates root list from input list #
         root_list = inputToRootList(id_list, config)
+
+        # enforces 20-item limit on input
         if len(root_list) > 20:
             return [0, 0, 0, "Please limit each query to a maximum of 20 items.", 1]
         else:

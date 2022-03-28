@@ -4,6 +4,63 @@ import pandas as pd
 import numpy as np
 
 
+def checkFreshness(root_id, config={}):
+    """Check to see if root id is outdated.
+    
+    Keyword arguments:
+    root_id -- 18-digit int-format root id number
+    config -- dictionary of config settings (default {})
+    """
+
+    # sets client #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # returns True if root id is current, False if not #
+    return client.chunkedgraph.is_latest_roots(root_id)
+
+
+def coordsToRoot(coords, config={}):
+    """Convert coordinates in 4,4,40 nm resolution to root id.
+
+    Keyword arguments:
+    coords -- list of x,y,z coordinates in 4,4,40 nm resolution
+    """
+
+    # converts coordinates to ints #
+    coords = list(map(int, coords))
+
+    # sets client #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # sets cloud volume #
+    cv = cloudvolume.CloudVolume(
+        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+        use_https=True,
+    )
+
+    # determines resolution of volume #
+    res = cv.resolution
+
+    # converts coordinates using volume resolution #
+    cv_xyz = [
+        int(coords[0] / (res[0] / 4)),
+        int(coords[1] / (res[1] / 4)),
+        int(coords[2] / (res[2] / 40)),
+    ]
+
+    # sets point by passing converted coords to 'download_point' method #
+    point = int(cv.download_point(cv_xyz, size=1,))
+
+    # looks up sv's associated root id, converts to string #
+    root_result = int(client.chunkedgraph.get_root_id(supervoxel_id=point))
+
+    return root_result
+
+
 def getNuc(root_id, config={}):
     """Build a dataframe of nucleus table data in string format.
 
@@ -63,46 +120,6 @@ def inputToRootList(input_str, config={}):
     return root_list
 
 
-def coordsToRoot(coords, config={}):
-    """Convert coordinates in 4,4,40 nm resolution to root id.
-
-    Keyword arguments:
-    coords -- list of x,y,z coordinates in 4,4,40 nm resolution
-    """
-
-    # converts coordinates to ints #
-    coords = list(map(int, coords))
-
-    # sets client #
-    client = lookup_utilities.make_client(
-        config.get("datastack", None), config.get("server_address", None)
-    )
-
-    # sets cloud volume #
-    cv = cloudvolume.CloudVolume(
-        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
-        use_https=True,
-    )
-
-    # determines resolution of volume #
-    res = cv.resolution
-
-    # converts coordinates using volume resolution #
-    cv_xyz = [
-        int(coords[0] / (res[0] / 4)),
-        int(coords[1] / (res[1] / 4)),
-        int(coords[2] / (res[2] / 40)),
-    ]
-
-    # sets point by passing converted coords to 'download_point' method #
-    point = int(cv.download_point(cv_xyz, size=1,))
-
-    # looks up sv's associated root id, converts to string #
-    root_result = int(client.chunkedgraph.get_root_id(supervoxel_id=point))
-
-    return root_result
-
-
 def nmToNG(coords):
     """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
 
@@ -148,32 +165,51 @@ def rootListToDataFrame(root_list, config={}):
             "Merges",
             "Total Edits",
             "Editors",
+            "Current",
         ]
     )
     # generates df row and adds to output df for each root id #
     for i in root_list:
-        change_df = pd.DataFrame(client.chunkedgraph.get_tabular_change_log(i)[i])
-        edits_dict = change_df["is_merge"].value_counts().to_dict()
-        if True not in edits_dict:
-            edits_dict[True] = 0
-        if False not in edits_dict:
-            edits_dict[False] = 0
-        proofreader_list = np.unique(change_df["user_id"])
-        proofreaders = ", ".join([str(i) for i in proofreader_list])
+        try:
+            change_df = pd.DataFrame(client.chunkedgraph.get_tabular_change_log(i)[i])
 
-        row_df = getNuc(i, config)
+            edits_dict = change_df["is_merge"].value_counts().to_dict()
+            if True not in edits_dict:
+                edits_dict[True] = 0
+            if False not in edits_dict:
+                edits_dict[False] = 0
+            proofreader_list = np.unique(change_df["user_id"])
+            proofreaders = ", ".join([str(i) for i in proofreader_list])
 
-        # handles segments without nuclei #
-        if row_df.empty:
+            row_df = getNuc(i, config)
+
+            # handles segments without nuclei #
+            if row_df.empty:
+                row_df = pd.DataFrame(
+                    {"Root ID": i, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
+                    index=[0],
+                ).astype(str)
+
+            row_df["Splits"] = str(edits_dict[False])
+            row_df["Merges"] = str(edits_dict[True])
+            row_df["Total Edits"] = str(len(change_df))
+            row_df["Editors"] = proofreaders
+            row_df["Current"] = checkFreshness(i, config)
+
+        except:
             row_df = pd.DataFrame(
-                {"Root ID": i, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
+                {
+                    "Root ID": i,
+                    "Nuc ID": "BAD ID",
+                    "Nucleus Coordinates": "BAD ID",
+                    "Splits": "BAD ID",
+                    "Merges": "BAD ID",
+                    "Total Edits": "BAD ID",
+                    "Editors": "BAD ID",
+                    "Current": "BAD ID",
+                },
                 index=[0],
             ).astype(str)
-
-        row_df["Splits"] = str(edits_dict[False])
-        row_df["Merges"] = str(edits_dict[True])
-        row_df["Total Edits"] = str(len(change_df))
-        row_df["Editors"] = proofreaders
 
         output_df = pd.concat([output_df, row_df])
 
