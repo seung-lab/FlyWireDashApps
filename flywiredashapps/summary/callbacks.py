@@ -47,9 +47,12 @@ def register_callbacks(app, config=None):
         if len(root_list) > 20:
             return [0, 0, 0, "Please limit each query to a maximum of 20 items.", 1]
         else:
+
             output_df = rootListToDataFrame(root_list, config)
+
             # creates column list based on dataframe columns #
             column_list = [{"name": i, "id": i} for i in output_df.columns]
+
             data_dict = output_df.to_dict("records")
 
             end_time = time.time()

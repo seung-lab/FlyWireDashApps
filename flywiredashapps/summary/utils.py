@@ -1,4 +1,5 @@
 from ..common import lookup_utilities
+import time
 import cloudvolume
 import pandas as pd
 import numpy as np
@@ -11,7 +12,6 @@ def checkFreshness(root_id, config={}):
     root_id -- 18-digit int-format root id number
     config -- dictionary of config settings (default {})
     """
-
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
@@ -170,17 +170,37 @@ def rootListToDataFrame(root_list, config={}):
     )
     # generates df row and adds to output df for each root id #
     for i in root_list:
+
+        # try to form df, otherwise default to bad id behavior #
         try:
-            change_df = pd.DataFrame(client.chunkedgraph.get_tabular_change_log(i)[i])
+            # sets freshness to T/F to check for outdated ids #
+            freshness = checkFreshness(i, config)
 
-            edits_dict = change_df["is_merge"].value_counts().to_dict()
-            if True not in edits_dict:
-                edits_dict[True] = 0
-            if False not in edits_dict:
-                edits_dict[False] = 0
-            proofreader_list = np.unique(change_df["user_id"])
-            proofreaders = ", ".join([str(i) for i in proofreader_list])
+            # TEMPORARY FOR DEBUGGING #
+            tim1 = time.time()
 
+            # tries to make df using changelog #
+            try:
+                change_df = pd.DataFrame(
+                    client.chunkedgraph.get_tabular_change_log(i)[i]
+                )
+                edits_dict = change_df["is_merge"].value_counts().to_dict()
+                if True not in edits_dict:
+                    edits_dict[True] = 0
+                if False not in edits_dict:
+                    edits_dict[False] = 0
+                proofreader_list = np.unique(change_df["user_id"])
+                proofreaders = ", ".join([str(i) for i in proofreader_list])
+            # handles cases with no edits #
+            except:
+                change_df = pd.DataFrame()
+                edits_dict = {True: 0, False: 0}
+                proofreaders = "n/a"
+
+            # TEMPORARY FOR DEBUGGING #
+            print("Root:", i, "took", time.time() - tim1, "seconds.")
+
+            # gets nucleus information #
             row_df = getNuc(i, config)
 
             # handles segments without nuclei #
@@ -189,13 +209,22 @@ def rootListToDataFrame(root_list, config={}):
                     {"Root ID": i, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
                     index=[0],
                 ).astype(str)
-
+            # handles segments with multiple nuclei returns #
+            elif len(row_df) > 1:
+                row_df = pd.DataFrame(
+                    {
+                        "Root ID": i,
+                        "Nuc ID": "Multiple Nuc Returns",
+                        "Nucleus Coordinates": "Multiple Nuc Returns",
+                    },
+                    index=[0],
+                ).astype(str)
             row_df["Splits"] = str(edits_dict[False])
             row_df["Merges"] = str(edits_dict[True])
             row_df["Total Edits"] = str(len(change_df))
             row_df["Editors"] = proofreaders
-            row_df["Current"] = checkFreshness(i, config)
-
+            row_df["Current"] = freshness
+        # handles bad ids #
         except:
             row_df = pd.DataFrame(
                 {
