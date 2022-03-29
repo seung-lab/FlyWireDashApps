@@ -69,6 +69,11 @@ def page_layout(state={}):
                     ),
                 ]
             ),
+            # defines submit button loader #
+            html.Div(
+                dcc.Loading(id="submit_loader", type="default", children=""),
+                style={"width": "1000px",},
+            ),
             html.Br(),
             # defines output table #
             html.Div(

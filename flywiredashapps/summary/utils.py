@@ -106,8 +106,10 @@ def inputToRootList(input_str, config={}):
     input_str -- string of ids or 4,4,40nm coords separated by ,
     config -- dictionary of config settings (default {})
     """
-    # splits input_str into list and strips spaces #
-    input_list = [x.strip(" ") for x in str(input_str).split(",")]
+    # splits input_str into list and strips spaces and brackets #
+    input_list = [x.strip() for x in str(input_str).split(",")]
+    input_list = [x.strip("[") for x in input_list]
+    input_list = [x.strip("]") for x in input_list]
     # if ids are roots #
     if all([len(i) == 18 for i in input_list]):
         root_list = [int(i) for i in input_list]
@@ -117,6 +119,8 @@ def inputToRootList(input_str, config={}):
     # if id is coordinates #
     elif len(input_list) % 3 == 0:
         root_list = [coordsToRoot(input_list, config)]
+    else:
+        root_list = input_list
     return root_list
 
 
@@ -168,6 +172,7 @@ def rootListToDataFrame(root_list, config={}):
             "Current",
         ]
     )
+
     # generates df row and adds to output df for each root id #
     for i in root_list:
 
