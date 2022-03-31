@@ -168,7 +168,6 @@ def buildLink(
     nuc_sb = StateBuilder([nuc_anno])
     chained_sb = ChainedStateBuilder([up_sb, down_sb, nuc_sb])
 
-    # renders state as json and converts dumped json produced by #
     # render_state into non-dumped version using json.loads() #
     state_json = json.loads(
         chained_sb.render_state(

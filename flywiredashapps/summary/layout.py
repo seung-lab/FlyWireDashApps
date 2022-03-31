@@ -84,6 +84,7 @@ def page_layout(state={}):
                         "height": "auto",
                         "textAlign": "center",
                     },
+                    row_selectable="multi",
                 ),
                 style={"margin-left": "5px", "margin-right": "5px"},
             ),

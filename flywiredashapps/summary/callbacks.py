@@ -3,6 +3,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 import urllib.parse
+from itertools import compress
 from dash.exceptions import PreventUpdate
 from .utils import *
 
@@ -36,6 +37,47 @@ def register_callbacks(app, config=None):
                                 "margin-left": "5px",
                                 "margin-top": "5px",
                                 "margin-bottom": "5px",
+                            },
+                        ),
+                        # defines link button loader #
+                        html.Div(
+                            dcc.Loading(id="link_loader", type="default", children=""),
+                            style={
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "width": "1000px",
+                            },
+                        ),
+                        # defines link generation button #
+                        dbc.Button(
+                            "Generate NG Link Using Selected Root IDs",
+                            id="link_button",
+                            n_clicks=0,
+                            target="tab",
+                            style={
+                                "margin-top": "5px",
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "margin-bottom": "5px",
+                                "width": "400px",
+                                # "display": "inline-block",
+                                "vertical-align": "top",
+                            },
+                        ),
+                        # defines button to clear table selections #
+                        dbc.Button(
+                            "Clear Partner Selections",
+                            id="clear_button",
+                            n_clicks=0,
+                            color="danger",
+                            style={
+                                "width": "400px",
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "margin-top": "5px",
+                                "margin-bottom": "25px",
+                                # "display": "inline-block",
+                                "vertical-align": "top",
                             },
                         ),
                     ]
@@ -152,6 +194,50 @@ def register_callbacks(app, config=None):
             return [root_query, bp]
         else:
             raise PreventUpdate
+
+        # defines callback that generates neuroglancer link #
+
+    @app.callback(
+        Output("link_button", "href",),
+        Output("link_loader", "children",),
+        Input("table", "selected_rows",),
+        State("table", "data",),
+        prevent_initial_call=True,
+    )
+    def makeLink(rows, table_data, cb=False):
+        """Create neuroglancer link using selected IDs.
+
+        Keyword arguments:
+        rows -- list of selected upstream row indices
+        data -- dataframe of summary table data
+        cb -- bool to determine colorblind option (default False)
+        """
+
+        # generates root list using table data and selected rows #
+        root_list = [int(table_data[rows[x]]["Root ID"]) for x in rows]
+
+        # generates nuc list the same way #
+        nuc_list = [table_data[rows[x]]["Nucleus Coordinates"] for x in rows]
+
+        # creates a list of bools to weed out bad ids and cells without nuclei #
+        bool_filter = [x != "n/a" and x != "BAD ID" for x in nuc_list]
+
+        # applies the filter to the nuc list #
+        nuc_list = list(compress(nuc_list, bool_filter))
+
+        # converts the nuc list to a dict #
+        # while also converting the coordinate strings to lists of ints #
+        nuc_dict = {
+            "pt_position": [
+                [int(y.strip(" []")) for y in x.split(",")] for x in nuc_list
+            ]
+        }
+
+        # builds url using buildSummaryLink function #
+        out_url = buildSummaryLink(root_list, nuc_dict, cb=cb, config=config)
+
+        # returns url string and empty string for loader #
+        return [out_url, ""]
 
     pass
 

@@ -1,8 +1,140 @@
 from ..common import lookup_utilities
 import time
+import json
 import cloudvolume
 import pandas as pd
 import numpy as np
+from nglui.statebuilder import *
+
+
+def colorPick(num_of_segs):
+    """Generate list of colors in hex spaced evenly around a color wheel.
+    
+    Keyword arguments:
+    num_of_segs -- number of segments to be colors as an int value
+    """
+    # makes blank list to fill with colors #
+    colors = []
+    # determines increment on 1536-point scale of RGB values #
+    # custom scale keeps saturation at 100% and value at 50% #
+    increment = int(1536 / num_of_segs)
+    # sets default color number to 0 #
+    color_number = 0
+    # sets color based on quotient and remainder of color number / 256
+    for i in range(num_of_segs):
+        # sets period of cycle using quotient #
+        color_period = color_number // 256
+        # sets position in period using remainder #
+        changing_value = color_number % 256
+        # green rising #
+        if color_period == 0:
+            r = 255
+            g = changing_value
+            b = 0
+        # red falling #
+        elif color_period == 1:
+            r = 255 - changing_value
+            g = 255
+            b = 0
+        # blue rising #
+        elif color_period == 2:
+            r = 0
+            g = 255
+            b = changing_value
+        # green falling #
+        elif color_period == 3:
+            r = 0
+            g = 255 - changing_value
+            b = 255
+        # red rising #
+        elif color_period == 4:
+            r = changing_value
+            g = 0
+            b = 255
+        # blue falling #
+        elif color_period == 5:
+            r = 255
+            g = 0
+            b = 255 - changing_value
+
+        # converts rgb values to hex strings #
+        r, g, b = str(hex(r))[2:], str(hex(g))[2:], str(hex(b))[2:]
+
+        # compensates for python's display of single digit hex values below 16 #
+        if len(r) == 1:
+            r = "0" + r
+        if len(g) == 1:
+            g = "0" + g
+        if len(b) == 1:
+            b = "0" + b
+
+        # sets color by combining rgb hex strings #
+        color = "#" + r + g + b
+        # appends colors list with current color
+        colors.append(color)
+        # advances color number ahead by fraction of 1536
+        color_number += increment
+
+    return colors
+
+
+def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
+    """Generate NG link.
+    
+    Keyword arguments:
+    root_list -- list of int-format root ids
+    nuc_list -- list of listed ints for x,y,z coords of nuclei in 4,4,40 nm resolution
+    cb -- currently unused bool option for colorblind-friendliness (default False)
+    config -- dictionary of config settings (default {})
+    """
+    # generates list of hex colors for segments #
+    colors = colorPick(len(root_list))
+
+    # sets client using flywire production datastack #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # sets configuration for EM layer #
+    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+
+    nuc_coords_df = pd.DataFrame(nuc_dict)
+
+    # sets configuration for segmentation layer #
+    seg = SegmentationLayerConfig(
+        name="Production-segmentation_with_graph",
+        source=client.info.segmentation_source(),
+        fixed_ids=root_list,
+        fixed_id_colors=colors,
+        view_kws={"alpha_3d": 0.8},
+    )
+
+    points = PointMapper(point_column="pt_position")
+
+    nuc_annos = AnnotationLayerConfig(
+        name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
+    )
+
+    view_options = {
+        "position": [119412, 62016, 3539,],
+        "zoom_3d": 10000,
+    }
+
+    # defines 'sb' by passing in rules for img, seg, and anno layers #
+    sb = StateBuilder([img, seg, nuc_annos], view_kws=view_options,)
+
+    # render_state into non-dumped version using json.loads() #
+    state_json = json.loads(sb.render_state(nuc_coords_df, return_as="json",))
+
+    # feeds state_json into state uploader to set the value of 'new_id' #
+    new_id = client.state.upload_state_json(state_json)
+
+    # defines url using builder, passing in the new_id and the ngl url #
+    url = client.state.build_neuroglancer_url(
+        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+    )
+
+    return url
 
 
 def checkFreshness(root_id, config={}):
