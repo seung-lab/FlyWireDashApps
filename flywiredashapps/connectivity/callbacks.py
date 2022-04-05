@@ -172,10 +172,10 @@ def register_callbacks(app, config=None):
                 or len(query_id) == 3
                 and len(str(query_id[0])) != len(str(query_id[2]))
             ):
-
+                print("QUERY_ID:", query_id)
                 # converts id input to root id #
                 root_id = idConvert(query_id, config=config)
-
+                print("ROOT_ID:", root_id)
                 # throws error if root id is outdated #
                 if checkFreshness(root_id, config=config) == False:
                     return [
