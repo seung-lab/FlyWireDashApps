@@ -101,6 +101,7 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
         print(f"page_load href={href} state={state}")
         return page_layout(state)
 
+    # appears that this is unused #
     @app.callback(
         Output("url", "search"),
         # NOTE currently only support property="value"...
@@ -111,7 +112,6 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
         """Updates URL from component values."""
 
         state = {}
-
         # https://dash.plotly.com/pattern-matching-callbacks
         inputs = dash.callback_context.inputs_list[0]
         for input in inputs:

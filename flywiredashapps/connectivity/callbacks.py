@@ -515,8 +515,10 @@ def register_callbacks(app, config=None):
         Output("submit_button", "n_clicks"),
         Input("url", "href"),
         State("input_field", "value"),
+        State("cleft_thresh_field", "value"),
+        # State("input_field", "value"),
     )
-    def url_check(url_search, tempinput):
+    def url_check(url_search, input_val, cleft_val):
         """Check url for params, feed into app if found.
 
         Keyword arguments:
@@ -544,9 +546,17 @@ def register_callbacks(app, config=None):
         except:
             thresh_query = 50
 
-        # temporary for debugging #
-        print("root_query:", root_query)
-        print("type(root_query):", type(root_query))
+        # keeps from creating endless loop #
+        if root_query == input_val and thresh_query == cleft_val:
+            raise PreventUpdate
+        else:
+            pass
+
+        if bp == 0:
+            raise PreventUpdate
+
+        # TEMPORARY FOR DEBUGGING #
+        print("[   url_check   ]")
 
         return [root_query, thresh_query, bp]
 
@@ -575,6 +585,28 @@ def register_callbacks(app, config=None):
         else:
             core_address = url_href
 
+        # parses url queries #
+        parsed = urllib.parse.urlparse(url_href)
+        # parses parsed into dictionary #
+        parsed_dict = urllib.parse.parse_qs(parsed.query)
+
+        # tries to assign root and thresh values using query #
+        # increases button press to 1 if either found #
+        try:
+            root_query = parsed_dict["root_id"][0]
+        except:
+            root_query = None
+        try:
+            thresh_query = int(parsed_dict["cleft_thresh"][0])
+        except:
+            thresh_query = 50
+
+        # keeps from creating endless loop #
+        if root_query == root_id and thresh_query == cleft_thresh:
+            raise PreventUpdate
+        else:
+            pass
+
         core_with_query = (
             core_address
             + "?root_id="
@@ -582,6 +614,9 @@ def register_callbacks(app, config=None):
             + "&cleft_thresh="
             + str(cleft_thresh)
         )
+
+        # TEMPORARY FOR DEBUGGING #
+        print("[   inputToSearch   ]")
 
         # returns core address if no input given, otherwise, adds input as query #
         if root_id != None:
