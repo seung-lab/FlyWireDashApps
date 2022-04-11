@@ -39,280 +39,350 @@ def register_callbacks(app, config=None):
         query_id -- root id of queried neuron as int
         cleft_thresh -- float value of cleft score threshold
         """
-        if query_id != None:
-            post_div_linkbuttons = [
-                html.Div(
-                    [
-                        # defines link generation button #
-                        dbc.Button(
-                            "Generate NG Link Using Selected Partners",
-                            id="link_button",
-                            n_clicks=0,
-                            target="tab",
-                            style={
-                                "margin-top": "5px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-bottom": "5px",
-                                "width": "400px",
-                                "display": "inline-block",
-                                "vertical-align": "top",
-                            },
-                        ),
-                        # defines button to clear table selections #
-                        dbc.Button(
-                            "Clear Partner Selections",
-                            id="clear_button",
-                            n_clicks=0,
-                            color="danger",
-                            style={
-                                "width": "400px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "25px",
-                                "display": "inline-block",
-                                "vertical-align": "top",
-                            },
-                        ),
-                        # unused colorblind option checkbox #
-                        # dbc.Checklist(
-                        #     options=[{"label": "Colorblind", "value": True},],
-                        #     value=[False],
-                        #     id="cb_input",
-                        # ),
-                        # defines link button loader #
-                        html.Div(
-                            dcc.Loading(id="link_loader", type="default", children=""),
-                            style={
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "width": "1000px",
-                            },
-                        ),
-                    ],
-                ),
-            ]
 
-            post_sum = [
-                # defines summary downloader #
-                html.Div(
-                    [
-                        dbc.Button(
-                            "Download Summary Table as CSV File",
-                            id="summary_download_button",
-                            color="success",
-                            style={
-                                "width": "420px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "5px",
-                            },
-                        ),
-                    ]
-                ),
-                dcc.Download(id="summary_download"),
-            ]
-            post_up = [
-                # defines upstream downloader #
-                html.Div(
-                    [
-                        dbc.Button(
-                            "Download Upstream Partner Table as CSV File",
-                            id="upstream_download_button",
-                            color="success",
-                            style={
-                                "width": "420px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "5px",
-                            },
-                        ),
-                    ]
-                ),
-                dcc.Download(id="upstream_download"),
-            ]
-            post_down = [
-                # defines downstream downloader #
-                html.Div(
-                    [
-                        dbc.Button(
-                            "Download Downstream Partner Table as CSV File",
-                            id="downstream_download_button",
-                            color="success",
-                            style={
-                                "width": "420px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "5px",
-                            },
-                        ),
-                    ]
-                ),
-                dcc.Download(id="downstream_download"),
-            ]
+        # sets start time #
+        start_time = time.time()
 
-            # sets start time #
-            start_time = time.time()
-
-            # splits 'ids' string into list #
-            query_id = str(query_id).split(",")
-
-            # strips spaces and brackets from id_list entries and converts to integers #
-            query_id = [str(x.strip(" ")) for x in query_id]
-            query_id = [str(x.strip("[")) for x in query_id]
-            query_id = [int(str(x.strip("]"))) for x in query_id]
-
-            # builds output if 1-item threshold isn't exceeded #
-            if (
-                len(query_id) == 1
-                or len(query_id) == 3
-                and len(str(query_id[0])) != len(str(query_id[2]))
-            ):
-                print("QUERY_ID:", query_id)
-                # converts id input to root id #
-                root_id = idConvert(query_id, config=config)
-                print("ROOT_ID:", root_id)
-                # throws error if root id is outdated #
-                if checkFreshness(root_id, config=config) == False:
-                    return [
-                        [],
-                        [],
-                        [],
-                        [],
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        [],
-                        "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
-                        1,
-                        "",
-                    ]
-
-                # should handle cases with bad ids, currently circumvented #
-                if root_id == 0:
-                    return [
-                        [],
-                        [],
-                        [],
-                        [],
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        [],
-                        "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
-                        1,
-                        "",
-                    ]
-
-                # builds dataframes and graphs #
-                sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
-                sum_df = sum_list[0]
-                up_df = makePartnerDataFrame(
-                    root_id, cleft_thresh, upstream=True, config=config
-                )
-                down_df = makePartnerDataFrame(
-                    root_id, cleft_thresh, upstream=False, config=config
-                )
-                up_violin = makeViolin(
-                    root_id, cleft_thresh, incoming=True, config=config
-                )
-                down_violin = makeViolin(
-                    root_id, cleft_thresh, incoming=False, config=config
-                )
-                up_pie = makePie(root_id, cleft_thresh, incoming=True, config=config)
-                down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
-
-                # assigns df values to 'cols' and 'data' for passing to dash table #
-                sum_cols = [{"name": i, "id": i,} for i in sum_df.columns]
-                up_cols = [{"name": i, "id": i,} for i in up_df.columns]
-                down_cols = [{"name": i, "id": i,} for i in down_df.columns]
-                sum_data = sum_df.to_dict("records")
-                up_data = up_df.to_dict("records")
-                down_data = down_df.to_dict("records")
-
-                # builds list of figures to pass to children of graph_div #
-                figs = [
-                    html.Div(
-                        dcc.Graph(id="incoming_figure", figure=up_violin,),
-                        style={"display": "inline-block"},
-                    ),
-                    html.Div(
-                        dcc.Graph(id="outgoing_figure", figure=down_violin,),
-                        style={"display": "inline-block",},
-                    ),
-                    html.Div(
-                        dcc.Graph(id="in_pie_chart", figure=up_pie,),
-                        style={"display": "inline-block",},
-                    ),
-                    html.Div(
-                        dcc.Graph(id="out_pie_chart", figure=down_pie,),
-                        style={"display": "inline-block",},
-                    ),
-                ]
-
-                # sets end time #
-                end_time = time.time()
-                # calculates elapsed time #
-                elapsed_time = str(round(end_time - start_time))
-
-                # relays time information #
-                message_text = (
-                    "Connectivity query completed in "
-                    + elapsed_time
-                    + " seconds. \n"
-                    + sum_list[1]
-                )
-
-                # sets text area rows based on length of message #
-                message_rows = message_text.count("\n")
-
-                return [
-                    post_sum,
-                    post_up,
-                    post_down,
-                    post_div_linkbuttons,
-                    sum_cols,
-                    sum_data,
-                    up_cols,
-                    up_data,
-                    down_cols,
-                    down_data,
-                    figs,
-                    message_text,
-                    message_rows,
-                    "",
-                ]
-
-            # returns error message if 1-item threshold is exceeded #
-            else:
-                return [
-                    [],
-                    [],
-                    [],
-                    [],
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    [],
-                    "Please limit each query to one entry.",
-                    1,
-                    "",
-                ]
-        else:
+        # handles blank id submission #
+        if query_id == None:
             raise PreventUpdate
+        else:
+            pass
+
+        # splits 'ids' string into list #
+        query_id = str(query_id).split(",")
+
+        # strips spaces and brackets from id_list entries and converts to integers #
+        query_id = [str(x.strip(" ")) for x in query_id]
+        query_id = [str(x.strip("[")) for x in query_id]
+        query_id = [int(str(x.strip("]"))) for x in query_id]
+
+        # handles multiple id sumbission #
+        if (len(query_id) != 1 and len(query_id) != 3) or (
+            len(query_id) == 3 and len(str(query_id[0])) == len(str(query_id[2]))
+        ):
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Please limit each query to one neuron.",
+                1,
+                "",
+            ]
+        else:
+            pass
+
+        # handles bad IDs if idConvert fails #
+        try:
+            # converts id input to root id #
+            root_id = idConvert(query_id, config=config)
+        except:
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
+                1,
+                "",
+            ]
+
+        # handles bad return from freshness checker #
+        try:
+            fresh = checkFreshness(root_id, config=config)
+        except:
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
+                1,
+                "",
+            ]
+
+        # handles outdated ids #
+        if fresh == False:
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
+                1,
+                "",
+            ]
+        else:
+            pass
+
+        # handles 0 ids if they somehow make it through all previous filters #
+        if root_id == 0:
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
+                1,
+                "",
+            ]
+        else:
+            pass
+
+        # builds dataframes and graphs #
+        sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
+        sum_df = sum_list[0]
+
+        # clunky but necessary handling for bad ids that make it through all previous filters #
+        final_check = sum_df.loc[0].values.flatten().tolist()[1:]
+        if final_check == ["n/a", "n/a", "0", "0", "0", "0"]:
+            return [
+                [],
+                [],
+                [],
+                [],
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                [],
+                "Bad ID or no-synapse orphan. Please check and try again.",
+                1,
+                "",
+            ]
+        else:
+            pass
+
+        up_df = makePartnerDataFrame(
+            root_id, cleft_thresh, upstream=True, config=config
+        )
+        down_df = makePartnerDataFrame(
+            root_id, cleft_thresh, upstream=False, config=config
+        )
+        up_violin = makeViolin(root_id, cleft_thresh, incoming=True, config=config)
+        down_violin = makeViolin(root_id, cleft_thresh, incoming=False, config=config)
+        up_pie = makePie(root_id, cleft_thresh, incoming=True, config=config)
+        down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
+
+        # assigns df values to 'cols' and 'data' for passing to dash table #
+        sum_cols = [{"name": i, "id": i,} for i in sum_df.columns]
+        up_cols = [{"name": i, "id": i,} for i in up_df.columns]
+        down_cols = [{"name": i, "id": i,} for i in down_df.columns]
+        sum_data = sum_df.to_dict("records")
+        up_data = up_df.to_dict("records")
+        down_data = down_df.to_dict("records")
+
+        # builds list of figures to pass to children of graph_div #
+        figs = [
+            html.Div(
+                dcc.Graph(id="incoming_figure", figure=up_violin,),
+                style={"display": "inline-block"},
+            ),
+            html.Div(
+                dcc.Graph(id="outgoing_figure", figure=down_violin,),
+                style={"display": "inline-block",},
+            ),
+            html.Div(
+                dcc.Graph(id="in_pie_chart", figure=up_pie,),
+                style={"display": "inline-block",},
+            ),
+            html.Div(
+                dcc.Graph(id="out_pie_chart", figure=down_pie,),
+                style={"display": "inline-block",},
+            ),
+        ]
+
+        # creates layout for linkbuilder buttons #
+        post_div_linkbuttons = [
+            html.Div(
+                [
+                    # defines link generation button #
+                    dbc.Button(
+                        "Generate NG Link Using Selected Partners",
+                        id="link_button",
+                        n_clicks=0,
+                        target="tab",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "400px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines button to clear table selections #
+                    dbc.Button(
+                        "Clear Partner Selections",
+                        id="clear_button",
+                        n_clicks=0,
+                        color="danger",
+                        style={
+                            "width": "400px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "25px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # unused colorblind option checkbox #
+                    # dbc.Checklist(
+                    #     options=[{"label": "Colorblind", "value": True},],
+                    #     value=[False],
+                    #     id="cb_input",
+                    # ),
+                    # defines link button loader #
+                    html.Div(
+                        dcc.Loading(id="link_loader", type="default", children=""),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                ],
+            ),
+        ]
+
+        # creates layout for summary downloader #
+        post_sum = [
+            # defines summary downloader #
+            html.Div(
+                [
+                    dbc.Button(
+                        "Download Summary Table as CSV File",
+                        id="summary_download_button",
+                        color="success",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "5px",
+                        },
+                    ),
+                ]
+            ),
+            dcc.Download(id="summary_download"),
+        ]
+
+        # creates layout for upstream downloader #
+        post_up = [
+            # defines upstream downloader #
+            html.Div(
+                [
+                    dbc.Button(
+                        "Download Upstream Partner Table as CSV File",
+                        id="upstream_download_button",
+                        color="success",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "5px",
+                        },
+                    ),
+                ]
+            ),
+            dcc.Download(id="upstream_download"),
+        ]
+
+        # creates layout for downstream downloader #
+        post_down = [
+            # defines downstream downloader #
+            html.Div(
+                [
+                    dbc.Button(
+                        "Download Downstream Partner Table as CSV File",
+                        id="downstream_download_button",
+                        color="success",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "5px",
+                        },
+                    ),
+                ]
+            ),
+            dcc.Download(id="downstream_download"),
+        ]
+
+        # sets end time #
+        end_time = time.time()
+        # calculates elapsed time #
+        elapsed_time = str(round(end_time - start_time))
+
+        # relays time information #
+        message_text = (
+            "Connectivity query completed in "
+            + elapsed_time
+            + " seconds. \n"
+            + sum_list[1]
+        )
+
+        # sets text area rows based on length of message #
+        message_rows = message_text.count("\n")
+
+        return [
+            post_sum,
+            post_up,
+            post_down,
+            post_div_linkbuttons,
+            sum_cols,
+            sum_data,
+            up_cols,
+            up_data,
+            down_cols,
+            down_data,
+            figs,
+            message_text,
+            message_rows,
+            "",
+        ]
 
     # defines callback that generates neuroglancer link #
     @app.callback(
@@ -473,6 +543,10 @@ def register_callbacks(app, config=None):
             bp = 1
         except:
             thresh_query = 50
+
+        # temporary for debugging #
+        print("root_query:", root_query)
+        print("type(root_query):", type(root_query))
 
         return [root_query, thresh_query, bp]
 

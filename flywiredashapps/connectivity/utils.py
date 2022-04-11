@@ -148,8 +148,7 @@ def buildLink(
     nuc_anno = AnnotationLayerConfig(
         name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
     )
-    print("LINKNUC:", nucleus)
-    print("LINKNUCTYPE:", type(nucleus))
+
     # sets view to nucelus of query cell #
     # defaults to center of dataset if no input #
     if type(nucleus[0]) != str and int(nucleus[0]) > 0:
@@ -261,16 +260,12 @@ def getNuc(root_id, config={}):
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
 
-    print("ROOT IN NUC:", root_id)
-
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
         filter_in_dict={"pt_root_id": [root_id]},
         materialization_version=mat_vers,
     )
-
-    print("NUC_DF", nuc_df)
 
     # handles roots with multiple nuclei #
     if len(nuc_df) > 1:
