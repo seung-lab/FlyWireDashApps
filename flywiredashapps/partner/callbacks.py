@@ -6,6 +6,7 @@ import urllib.parse
 from itertools import compress
 from dash.exceptions import PreventUpdate
 from .utils import *
+import pandas as pd
 
 
 def register_callbacks(app, config=None):
@@ -30,6 +31,7 @@ def register_callbacks(app, config=None):
         n_clicks -- int number of times the submit button has been pressed
         id_a -- str format root or nuc id of input a
         id_b -- str format root or nuc id of input b
+        cleft_thresh -- float value of cleft threshold field
         """
 
         # bad id handling #
@@ -97,7 +99,7 @@ def register_callbacks(app, config=None):
                     "Value": [
                         id_a,
                         nuc_a_df.loc[0, "Nuc ID"],
-                        nuc_a_df.loc[0, "Nuc ID"],
+                        nuc_a_df.loc[0, "Nucleus Coordinates"],
                     ],
                 }
             )
@@ -115,7 +117,7 @@ def register_callbacks(app, config=None):
                     "Value": [
                         id_b,
                         nuc_b_df.loc[0, "Nuc ID"],
-                        nuc_b_df.loc[0, "Nuc ID"],
+                        nuc_b_df.loc[0, "Nucleus Coordinates"],
                     ],
                 }
             )
@@ -157,10 +159,18 @@ def register_callbacks(app, config=None):
         table_data = full_df.to_dict("records")
 
         # makes violin and pie charts #
-        a_to_b_violin = makePartnerViolin(id_a, id_b, cleft_thresh, config)
-        b_to_a_violin = makePartnerViolin(id_b, id_a, cleft_thresh, config)
-        a_to_b_pie = makePartnerPie(id_a, id_b, cleft_thresh, config)
-        b_to_a_pie = makePartnerPie(id_b, id_a, cleft_thresh, config)
+        a_to_b_violin = makePartnerViolin(
+            id_a, id_b, cleft_thresh, "A>B Synapse NT Scores", config,
+        )
+        b_to_a_violin = makePartnerViolin(
+            id_b, id_a, cleft_thresh, "B>A Synapse NT Scores", config
+        )
+        a_to_b_pie = makePartnerPie(
+            id_a, id_b, cleft_thresh, "A>B Synapse Neuropils", config
+        )
+        b_to_a_pie = makePartnerPie(
+            id_b, id_a, cleft_thresh, "B>A Synapse Neuropils", config
+        )
 
         # builds list of figures to pass to children of graph_div #
         graph_div = [
@@ -205,11 +215,40 @@ def register_callbacks(app, config=None):
             table_columns,
             table_data,
             message,
-            2,
+            7,
             "",
             graph_div,
             post_submit_div,
         ]
+
+    # defines callback that generates neuroglancer link #
+    @app.callback(
+        Output("link_button", "href",),
+        Input("submit_button", "n_clicks"),
+        State("input_a", "value"),
+        State("input_b", "value"),
+        State("cleft_thresh_input", "value"),
+        State("table", "data",),
+    )
+    def makeLink(n_clicks, id_a, id_b, cleft_thresh, table_data):
+        """Create neuroglancer link using selected partners.
+
+        Keyword arguments:
+        n_clicks -- unused dummy for trigger
+        id_a -- ??? format root id of input a
+        id_b -- ??? format root id of input b
+        cleft_thresh -- float value of cleft threshold field
+        table_data -- dataframe of summary table data
+        """
+
+        table_df = pd.DataFrame(table_data)
+
+        # makes list of nucleus coord strings #
+        nuc = [table_df.loc[2, "Value"], table_df.loc[5, "Value"]]
+
+        out_url = buildPartnerLink(id_a, id_b, cleft_thresh, nuc, config=config)
+
+        return out_url
 
     pass
 

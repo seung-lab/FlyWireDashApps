@@ -10,6 +10,119 @@ import plotly.graph_objects as go
 from functools import lru_cache
 
 
+def buildPartnerLink(id_a, id_b, cleft, nuc, config={}):
+    """Generate NG link.
+    
+    Keyword arguments:
+    id_a -- ? format root id of input a
+    id_b -- ? format root id of input b
+    cleft -- float value of cleft threshold field
+    nuc -- list of nucleus coords as strings
+    config -- dictionary of config settings (default {})
+    """
+
+    # generates list of hex colors for segments #
+    colors = ["#FF0000", "#00FFFF"]
+
+    # sets client using flywire production datastack #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # sets configuration for EM layer #
+    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+
+    # makes df of nucleus coords from list #
+    nuc_coords_df = pd.DataFrame({"pt_position": nuc})
+    nuc_coords_df["pt_position"] = [
+        stringToIntCoords(x) for x in nuc_coords_df["pt_position"]
+    ]
+
+    # makes dfs of raw synapses #
+    a_to_b_raw_df = getSyn(
+        id_a,
+        id_b,
+        cleft,
+        datastack_name=config.get("datastack", None),
+        server_address=config.get("server_address", None),
+    )[0]
+    b_to_a_raw_df = getSyn(
+        id_b,
+        id_a,
+        cleft,
+        datastack_name=config.get("datastack", None),
+        server_address=config.get("server_address", None),
+    )[0]
+
+    # converts coordinates to 4,4,40 resolution #
+    a_to_b_coords_df = pd.DataFrame(
+        {
+            "pre": [nmToNG(x) for x in a_to_b_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x) for x in a_to_b_raw_df["post_pt_position"]],
+        }
+    )
+    b_to_a_coords_df = pd.DataFrame(
+        {
+            "pre": [nmToNG(x) for x in b_to_a_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x) for x in b_to_a_raw_df["post_pt_position"]],
+        }
+    )
+
+    # sets configuration for segmentation layer #
+    seg = SegmentationLayerConfig(
+        name="Production-segmentation_with_graph",
+        source=client.info.segmentation_source(),
+        fixed_ids=[id_a, id_b],
+        fixed_id_colors=colors,
+        view_kws={"alpha_3d": 0.8},
+    )
+
+    # sets point and line mapping rules #
+    points = PointMapper(point_column="pt_position")
+    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+
+    # sets annotation layers #
+    nuc_annos = AnnotationLayerConfig(
+        name="Nucleus Coordinates", color="#FFFF00", mapping_rules=points,
+    )
+    a_to_b_annos = AnnotationLayerConfig(
+        name="A>B Synapses", color="#FF0000", mapping_rules=lines,
+    )
+    b_to_a_annos = AnnotationLayerConfig(
+        name="B>A Synapses", color="#00FFFF", mapping_rules=lines,
+    )
+
+    # sets default view #
+    view_options = {
+        "position": nuc_coords_df.loc[0, "pt_position"],
+        # "position": [119412, 62016, 3539,],
+        "zoom_3d": 10000,
+    }
+
+    # defines 'sb' by passing in rules for img, seg, and anno layers #
+    core_sb = StateBuilder([img, seg, nuc_annos], view_kws=view_options,)
+    a_to_b_sb = StateBuilder([a_to_b_annos])
+    b_to_a_sb = StateBuilder([b_to_a_annos])
+    chained_sb = ChainedStateBuilder([core_sb, a_to_b_sb, b_to_a_sb])
+
+    # render_state into non-dumped version using json.loads() #
+    state_json = json.loads(
+        chained_sb.render_state(
+            [nuc_coords_df, a_to_b_coords_df, b_to_a_coords_df], return_as="json",
+        )
+    )
+
+    # feeds state_json into state uploader to set the value of 'new_id' #
+    new_id = client.state.upload_state_json(state_json)
+
+    # defines url using builder, passing in the new_id and the ngl url #
+    url = client.state.build_neuroglancer_url(
+        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+    )
+
+    return url
+
+
 def checkFreshness(root_id, config={}):
     """Check to see if root id is outdated.
     
@@ -149,13 +262,14 @@ def getSyn(
     return [syn_df, output_message]
 
 
-def makePartnerPie(root_a, root_b, cleft_thresh, config={}):
+def makePartnerPie(root_a, root_b, cleft_thresh, title, config={}):
     """Create pie chart of relative synapse neuropils.
 
     Keyword arguments:
     root_a -- single int-format root id number for upstream neuron
     root_b -- single int-format root id number for downstream neuron
     cleft_thresh -- float-format cleft score threshold to drop synapses
+    title -- string for graph title
     config -- dictionary of config settings (default {})
     """
 
@@ -166,7 +280,6 @@ def makePartnerPie(root_a, root_b, cleft_thresh, config={}):
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
     )[0]
-    title_name = str(root_a) + " to " + str(root_b) + " Synapse Neuropils"
 
     # counts number of synapses to use as denominator in ratios #
     num_syn = len(query_df)
@@ -289,7 +402,7 @@ def makePartnerPie(root_a, root_b, cleft_thresh, config={}):
         ratios_df,
         values="Ratio",
         names="Neuropil",
-        title=title_name,
+        title=title,
         color="Neuropil",
         color_discrete_map=np_color_dict,
     )
@@ -307,13 +420,14 @@ def makePartnerPie(root_a, root_b, cleft_thresh, config={}):
     return region_pie
 
 
-def makePartnerViolin(root_a, root_b, cleft_thresh, config={}):
+def makePartnerViolin(root_a, root_b, cleft_thresh, title, config={}):
     """Build violin plots of up- and downstream neurotransmitter values.
 
     Keyword arguments:
     root_a -- single int-format root id number of upstream neuron
     root_b -- single int-format root id number of downstream neuron
     cleft_thresh -- float-format cleft score threshold to drop synapses
+    title -- string for graph title
     config -- dictionary of config settings (default {})
     """
 
@@ -325,7 +439,6 @@ def makePartnerViolin(root_a, root_b, cleft_thresh, config={}):
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
     )[0]
-    title_name = str(root_a) + " to " + str(root_b) + " Synapse NT Scores"
 
     # rounds data to 2 decimal places #
     query_df = query_df.round(2)
@@ -346,10 +459,7 @@ def makePartnerViolin(root_a, root_b, cleft_thresh, config={}):
 
     # fixes layout to minimize padding and fit two on one line #
     fig.update_layout(
-        title=title_name,
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,},
-        width=400,
-        height=200,
+        title=title, margin={"l": 5, "r": 5, "t": 25, "b": 5,}, width=400, height=200,
     )
 
     return fig
@@ -383,3 +493,21 @@ def nucToRoot(nuc_id, config={}):
     )
     root_id = int(nuc_df.loc[0, "pt_root_id"])
     return root_id
+
+
+def stringToIntCoords(string_coords):
+    """Convert coordinate string to list of integers.
+    
+    Keyword arguments:
+    string_coords -- x,y,z coordinates in string format with brackets 
+    """
+    coords = [int(x.strip(" []")) for x in string_coords.split(",")]
+    # int(y.strip(" []")) for y in x.split(",")
+    # print(string_coords)
+    # print(type(string_coords))
+    # # converts coordinates to ints #
+    # coords = list(map(int, string_coords))
+    # print(coords)
+    print(type(coords))
+    print(type(coords[0]))
+    return coords

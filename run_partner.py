@@ -1,7 +1,6 @@
 # Code to run an app locally
 from flywiredashapps.partner import create_app
 
-
 minnie_config = {
     "datastack": "minnie65_phase3_v1",
     "server_address": "https://global.daf-apis.com",
