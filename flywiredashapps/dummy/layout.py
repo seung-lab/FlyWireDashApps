@@ -14,12 +14,6 @@ url_bar_and_content_div = html.Div(
 
 # defines function to set page layout #
 def page_layout(state={}):
-    # print("!!!!!!!!!!!!!!!!!!!!STATE:", state)
-    # # sets value of elements from url using state #
-    # try:
-    #     message_value = state["message"]["value"]
-    # except:
-    #     message_value = "Default message."
 
     # defines layout of various app elements #
     layout = html.Div(
