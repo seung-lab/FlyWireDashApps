@@ -55,14 +55,17 @@ def page_layout(state={}):
                     ),
                     # defines input field #
                     dcc.Input(
-                        id="input_field",
-                        type="text",
-                        placeholder="Root/Nuc ID or Coords",
-                        style={
-                            "width": "178px",
-                            "display": "inline-block",
-                            "vertical-align": "top",
-                        },
+                        **create_component_kwargs(
+                            state,
+                            id_inner="input_field",
+                            type="text",
+                            placeholder="Root/Nuc ID or Coords",
+                            style={
+                                "width": "178px",
+                                "display": "inline-block",
+                                "vertical-align": "top",
+                            },
+                        )
                     ),
                 ],
                 style={"margin-left": "5px",},
@@ -85,23 +88,26 @@ def page_layout(state={}):
                     ),
                     # defines input field for cleft score threshold #
                     dcc.Input(
-                        id="cleft_thresh_field",
-                        type="number",
-                        value=50,
-                        style={
-                            "display": "inline-block",
-                            "width": "65px",
-                            "vertical-align": "top",
-                        },
+                        **create_component_kwargs(
+                            state,
+                            id_inner="cleft_thresh_field",
+                            type="number",
+                            value=50,
+                            style={
+                                "display": "inline-block",
+                                "width": "65px",
+                                "vertical-align": "top",
+                            },
+                        )
                     ),
                 ],
                 style={"margin-left": "5px", "margin-top": "5px",},
             ),
             # defines sumbission button #
             dbc.Button(
-                children=["Submit",],
                 id="submit_button",
-                n_clicks=0,
+                children=["Submit",],
+                # n_clicks=0,
                 style={
                     "display": "inline-block",
                     "width": "420px",
