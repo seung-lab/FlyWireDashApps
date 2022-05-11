@@ -151,9 +151,9 @@ def buildLink(
 
     # sets view to nucelus of query cell #
     # defaults to center of dataset if no input #
-    if type(nucleus[0]) != str and int(nucleus[0]) > 0:
+    if int(nucleus[0]) > 0:
         view_options = {
-            "position": nucleus,
+            "position": [int(x) for x in nucleus],
             "zoom_3d": 2000,
         }
     else:

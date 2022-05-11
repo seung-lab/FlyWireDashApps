@@ -411,18 +411,18 @@ def register_callbacks(app, config=None):
         cb -- bool to determine colorblind option
         """
 
+        # gets id of queried neuron from table #
         query_out = [query_data[0]["Root ID"]]
 
+        # checks if partners are selected, gets their ids if so #
         if up_rows == [] or up_rows == None:
             up_out = [0]
         else:
-            up_out = [up_data[up_rows[x]]["Upstream Partner ID"] for x in up_rows]
+            up_out = [up_data[x]["Upstream Partner ID"] for x in up_rows]
         if down_rows == [] or down_rows == None:
             down_out = [0]
         else:
-            down_out = [
-                down_data[down_rows[x]]["Downstream Partner ID"] for x in down_rows
-            ]
+            down_out = [down_data[x]["Downstream Partner ID"] for x in down_rows]
 
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
