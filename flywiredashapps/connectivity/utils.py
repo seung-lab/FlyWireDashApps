@@ -202,6 +202,23 @@ def checkFreshness(root_id, config={}):
     # returns True if root id is current, False if not #
     return client.chunkedgraph.is_latest_roots(root_id)
 
+# TEMPORARILY DISABLED #
+# def checkValidity(root_id, config={}):
+#     """Check to see if root id is valid.
+    
+#     Keyword arguments:
+#     root_id -- 18-digit int-format root id number
+#     config -- dictionary of config settings (default {})
+#     """
+
+#     # sets client #
+#     client = lookup_utilities.make_client(
+#         config.get("datastack", None), config.get("server_address", None)
+#     )
+
+#     # returns True if root id is valid, False if not #
+#     return client.chunkedgraph.is_valid_nodes(root_id)
+
 
 def coordsToRoot(coords, config={}):
     """Convert coordinates in 4,4,40 nm resolution to root id.

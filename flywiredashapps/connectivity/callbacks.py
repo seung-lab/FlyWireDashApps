@@ -1,11 +1,9 @@
 # Connectivity App #
-from dash import Dash, dcc, html, Input, Output, State, dash_table
+from dash import dcc, html, Input, Output, State, no_update
 from dash.exceptions import PreventUpdate
-from caveclient import chunkedgraph
 import dash_bootstrap_components as dbc
 from nglui.statebuilder import *
 import time
-import urllib.parse
 from .utils import *
 
 
@@ -29,7 +27,6 @@ def register_callbacks(app, config=None):
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
-        # prevent_initial_call=True,
     )
     def update_output(n_clicks, query_id, cleft_thresh):
         """Create summary and partner tables with violin plots for queried root id.
@@ -49,8 +46,6 @@ def register_callbacks(app, config=None):
         else:
             pass
 
-        print("UPDATE OUTPUT TRIGGERED, n_clicks =", n_clicks)
-
         # splits 'ids' string into list #
         query_id = str(query_id).split(",")
 
@@ -59,22 +54,26 @@ def register_callbacks(app, config=None):
         query_id = [str(x.strip("[")) for x in query_id]
         query_id = [int(str(x.strip("]"))) for x in query_id]
 
+        # temporarily disabled
+        # validity = checkValidity(query_id, config)
+        # print("ROOT:", query_id, "VALIDITY:", validity)
+
         # handles multiple id sumbission #
         if (len(query_id) != 1 and len(query_id) != 3) or (
             len(query_id) == 3 and len(str(query_id[0])) == len(str(query_id[2]))
         ):
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Please limit each query to one neuron.",
                 1,
                 "",
@@ -88,17 +87,17 @@ def register_callbacks(app, config=None):
             root_id = idConvert(query_id, config=config)
         except:
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
                 1,
                 "",
@@ -109,17 +108,17 @@ def register_callbacks(app, config=None):
             fresh = checkFreshness(root_id, config=config)
         except:
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
                 1,
                 "",
@@ -128,17 +127,17 @@ def register_callbacks(app, config=None):
         # handles outdated ids #
         if fresh == False:
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
                 1,
                 "",
@@ -149,17 +148,17 @@ def register_callbacks(app, config=None):
         # handles 0 ids if they somehow make it through all previous filters #
         if root_id == 0:
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
                 1,
                 "",
@@ -175,17 +174,17 @@ def register_callbacks(app, config=None):
         final_check = sum_df.loc[0].values.flatten().tolist()[1:]
         if final_check == ["n/a", "n/a", "0", "0", "0", "0"]:
             return [
-                [],
-                [],
-                [],
-                [],
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                [],
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
                 "Bad ID or no-synapse orphan. Please check and try again.",
                 1,
                 "",
@@ -472,6 +471,7 @@ def register_callbacks(app, config=None):
         n_clicks -- tracks clicks for download button
         table_data -- data from summary table
         """
+
         summary_df = pd.DataFrame(table_data)
         return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
 
@@ -489,6 +489,7 @@ def register_callbacks(app, config=None):
         n_clicks -- tracks clicks for download button
         table_data -- data from upstream table
         """
+
         upstream_df = pd.DataFrame(table_data)
         return dcc.send_data_frame(upstream_df.to_csv, "upstream_table.csv")
 
@@ -506,135 +507,10 @@ def register_callbacks(app, config=None):
         n_clicks -- tracks clicks for download button
         table_data -- data from downstream table
         """
+
         downstream_df = pd.DataFrame(table_data)
         downstream_df.head()
         return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
-
-    # TEMP FOR DEBUGGING #
-    @app.callback(
-        Output("submit_button", "children"), Input("message_text", "value"),
-    )
-    def print_flicker(message):
-        print("MESSAGE:", message)
-        return [
-            "Submit",
-        ]
-
-    # # defines callback to check for url parameters on pageload and feed into app #
-    # @app.callback(
-    #     Output("input_field", "value"),
-    #     Output("cleft_thresh_field", "value"),
-    #     Output("submit_button", "n_clicks"),
-    #     Input("url", "href"),
-    #     State("input_field", "value"),
-    #     State("cleft_thresh_field", "value"),
-    #     # State("input_field", "value"),
-    # )
-    # def url_check(url_search, input_val, cleft_val):
-    #     """Check url for params, feed into app if found.
-
-    #     Keyword arguments:
-    #     url_search -- url as string
-    #     """
-
-    #     # parses url queries #
-    #     parsed = urllib.parse.urlparse(url_search)
-    #     # parses parsed into dictionary #
-    #     parsed_dict = urllib.parse.parse_qs(parsed.query)
-
-    #     # sets button press output to default 0 #
-    #     bp = 0
-
-    #     # tries to assign root and thresh values using query #
-    #     # increases button press to 1 if either found #
-    #     try:
-    #         root_query = parsed_dict["root_id"][0]
-    #         bp = 1
-    #     except:
-    #         root_query = None
-    #     try:
-    #         thresh_query = int(parsed_dict["cleft_thresh"][0])
-    #         bp = 1
-    #     except:
-    #         thresh_query = 50
-
-    #     # keeps from creating endless loop #
-    #     if root_query == input_val and thresh_query == cleft_val:
-    #         raise PreventUpdate
-    #     else:
-    #         pass
-
-    #     if bp == 0:
-    #         raise PreventUpdate
-
-    #     # TEMPORARY FOR DEBUGGING #
-    #     print("[   url_check   ]")
-
-    #     return [root_query, thresh_query, bp]
-
-    # # defines callback to feed input root id into url query parameter #
-    # @app.callback(
-    #     Output("url", "href"),
-    #     Input("submit_button", "n_clicks"),
-    #     State("input_field", "value"),
-    #     State("cleft_thresh_field", "value"),
-    #     State("url", "href"),
-    #     prevent_initial_call=True,
-    # )
-    # def inputToSearch(n_clicks, root_id, cleft_thresh, url_href):
-    #     """Convert root id into url string.
-
-    #     Keyword Arguments:
-    #     n_clicks -- used to trigger on submission
-    #     root_id -- root id (can be anything)
-    #     cleft_thresh -- cleft score threshold as int
-    #     url_href -- the entire url as a string
-    #     """
-
-    #     # splits query params off core address if present #
-    #     if "?" in url_href:
-    #         core_address, query_dummy = url_href.split("?")
-    #     else:
-    #         core_address = url_href
-
-    #     # parses url queries #
-    #     parsed = urllib.parse.urlparse(url_href)
-    #     # parses parsed into dictionary #
-    #     parsed_dict = urllib.parse.parse_qs(parsed.query)
-
-    #     # tries to assign root and thresh values using query #
-    #     # increases button press to 1 if either found #
-    #     try:
-    #         root_query = parsed_dict["root_id"][0]
-    #     except:
-    #         root_query = None
-    #     try:
-    #         thresh_query = int(parsed_dict["cleft_thresh"][0])
-    #     except:
-    #         thresh_query = 50
-
-    #     # keeps from creating endless loop #
-    #     if root_query == root_id and thresh_query == cleft_thresh:
-    #         raise PreventUpdate
-    #     else:
-    #         pass
-
-    #     core_with_query = (
-    #         core_address
-    #         + "?root_id="
-    #         + str(root_id)
-    #         + "&cleft_thresh="
-    #         + str(cleft_thresh)
-    #     )
-
-    #     # TEMPORARY FOR DEBUGGING #
-    #     print("[   inputToSearch   ]")
-
-    #     # returns core address if no input given, otherwise, adds input as query #
-    #     if root_id != None:
-    #         return core_with_query
-    #     else:
-    #         return core_address
 
     pass
 

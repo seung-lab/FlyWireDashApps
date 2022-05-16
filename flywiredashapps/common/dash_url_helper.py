@@ -95,13 +95,13 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
     """
     NOTE ref: https://github.com/plotly/dash/issues/188
     """
-
     # returns layout based on url query fed as "state" object (dict of dicts) #
     # triggered whenever new url is submitted #
     @app.callback(
         Output("page-layout", "children"), inputs=[Input("url", "href")],
     )
     def page_load(href: str):
+
         # if there's no url, returns a blank layout, not sure why this is here #
         if not href:
             return []
@@ -135,7 +135,12 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
             assert isinstance(id, Dict)
             assert id["type"] == _COMPONENT_ID_TYPE
             id_inner = id["id_inner"]
-            state[_param_string(id_inner, input["property"])] = _myrepr(input["value"])
+            try:
+                state[_param_string(id_inner, input["property"])] = _myrepr(
+                    input["value"]
+                )
+            except:
+                pass
 
         params = urlencode(state, safe="%/:?~#+!$,;'@()*[]\"", quote_via=quote)
         print(f"update_url_state values={values} params={params}")

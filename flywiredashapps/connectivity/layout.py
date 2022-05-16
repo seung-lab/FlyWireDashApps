@@ -26,8 +26,7 @@ def page_layout(state={}):
                         + " Large queries (>100k synapses) may take up to 2 minutes."
                     ),
                     disabled=True,
-                    rows=1,
-                    style={"resize": "none",},
+                    autoFocus=True,
                 ),
                 style={
                     "margin-left": "5px",
@@ -107,7 +106,6 @@ def page_layout(state={}):
             dbc.Button(
                 id="submit_button",
                 children=["Submit",],
-                # n_clicks=0,
                 style={
                     "display": "inline-block",
                     "width": "420px",
