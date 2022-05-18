@@ -87,6 +87,7 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
     cb -- currently unused bool option for colorblind-friendliness (default False)
     config -- dictionary of config settings (default {})
     """
+
     # generates list of hex colors for segments #
     colors = colorPick(len(root_list))
 
@@ -313,9 +314,6 @@ def rootListToDataFrame(root_list, config={}):
             # sets freshness to T/F to check for outdated ids #
             freshness = checkFreshness(i, config)
 
-            # TEMPORARY FOR DEBUGGING #
-            tim1 = time.time()
-
             # tries to make df using changelog #
             try:
                 change_df = pd.DataFrame(
@@ -334,9 +332,6 @@ def rootListToDataFrame(root_list, config={}):
                 edits_dict = {True: 0, False: 0}
                 proofreaders = "n/a"
 
-            # TEMPORARY FOR DEBUGGING #
-            print("Root:", i, "took", time.time() - tim1, "seconds.")
-
             # gets nucleus information #
             row_df = getNuc(i, config)
 
@@ -347,20 +342,21 @@ def rootListToDataFrame(root_list, config={}):
                     index=[0],
                 ).astype(str)
             # handles segments with multiple nuclei returns #
-            elif len(row_df) > 1:
-                row_df = pd.DataFrame(
-                    {
-                        "Root ID": i,
-                        "Nuc ID": "Multiple Nuc Returns",
-                        "Nucleus Coordinates": "Multiple Nuc Returns",
-                    },
-                    index=[0],
-                ).astype(str)
+            # elif len(row_df) > 1:
+            #     row_df = pd.DataFrame(
+            #         {
+            #             "Root ID": i,
+            #             "Nuc ID": "Multiple Nuc Returns",
+            #             "Nucleus Coordinates": "Multiple Nuc Returns",
+            #         },
+            #         index=[0],
+            #     ).astype(str)
+
             row_df["Splits"] = str(edits_dict[False])
             row_df["Merges"] = str(edits_dict[True])
             row_df["Total Edits"] = str(len(change_df))
             row_df["Editors"] = proofreaders
-            row_df["Current"] = freshness
+            row_df["Current"] = freshness[0]
         # handles bad ids #
         except:
             row_df = pd.DataFrame(

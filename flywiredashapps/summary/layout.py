@@ -39,18 +39,21 @@ def page_layout(state={}):
             html.Div(
                 [
                     dbc.Input(
-                        id="input_field",
-                        type="text",
-                        placeholder="Root/Nuc ID or Coords",
-                        style={
-                            "width": "185px",
-                            "display": "inline-block",
-                            "vertical-align": "top",
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "margin-top": "5px",
-                            "margin-bottom": "5px",
-                        },
+                        **create_component_kwargs(
+                            state,
+                            id_inner="input_field",
+                            type="text",
+                            placeholder="Root/Nuc ID or Coords",
+                            style={
+                                "width": "185px",
+                                "display": "inline-block",
+                                "vertical-align": "top",
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "margin-top": "5px",
+                                "margin-bottom": "5px",
+                            },
+                        ),
                     ),
                     # defines submission button #
                     dbc.Button(
