@@ -143,6 +143,11 @@ def register_callbacks(app, config=None):
         # generates root list using table data and selected rows #
         root_list = [table_data[x]["Root ID"] for x in rows]
 
+        # removes bad IDs #
+        bad_mask = [table_data[x]["Nuc ID"] != "BAD ID" for x in rows]
+        print(bad_mask)
+        root_list = list(compress(root_list, bad_mask))
+
         if root_list == []:
             return ["", ""]
 
