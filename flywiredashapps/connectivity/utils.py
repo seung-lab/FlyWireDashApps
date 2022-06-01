@@ -151,16 +151,28 @@ def buildLink(
 
     # sets view to nucelus of query cell #
     # defaults to center of dataset if no input #
-    if int(nucleus[0]) > 0:
+    try:
         view_options = {
             "position": [int(x) for x in nucleus],
             "zoom_3d": 2000,
         }
-    else:
+    except:
         view_options = {
             "position": [119412, 62016, 3539,],
             "zoom_3d": 10000,
         }
+
+    #  ORIGINAL FOR SAFETY #
+    # if int(nucleus[0]) > 0:
+    #     view_options = {
+    #         "position": [int(x) for x in nucleus],
+    #         "zoom_3d": 2000,
+    #     }
+    # else:
+    #     view_options = {
+    #         "position": [119412, 62016, 3539,],
+    #         "zoom_3d": 10000,
+    #     }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
     up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
@@ -202,10 +214,11 @@ def checkFreshness(root_id, config={}):
     # returns True if root id is current, False if not #
     return client.chunkedgraph.is_latest_roots(root_id)
 
+
 # TEMPORARILY DISABLED #
 # def checkValidity(root_id, config={}):
 #     """Check to see if root id is valid.
-    
+
 #     Keyword arguments:
 #     root_id -- 18-digit int-format root id number
 #     config -- dictionary of config settings (default {})
@@ -358,10 +371,14 @@ def getSyn(
             materialization_version=mat_vers,
         )
 
+    # # converts cleft scores from str to int #
+    # if type(syn_df["cleft_score"]) == str:
+    #     syn_df = syn_df.astype({"cleft_score": "int"}).dtypes
+
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= cleft_thresh].reset_index(drop=True)
+    syn_df = syn_df[syn_df["cleft_score"] >= int(cleft_thresh)].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 
