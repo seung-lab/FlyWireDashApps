@@ -19,6 +19,7 @@ def register_callbacks(app, config=None):
     )
     def update_output(n_clicks, id_list):
         if id_list != None:
+
             start_time = time.time()
 
             post_div = [
@@ -111,6 +112,8 @@ def register_callbacks(app, config=None):
                 message_text = "Query completed in " + elapsed_time + " seconds."
 
                 return [post_div, column_list, data_dict, message_text, 1, ""]
+        else:
+            raise PreventUpdate
 
     # defines callback to download summary table as csv on button press #
     @app.callback(

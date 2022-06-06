@@ -134,7 +134,6 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
     )
     def update_url_state(values):
         """Updates URL from component values."""
-
         state = {}
         # https://dash.plotly.com/pattern-matching-callbacks
         inputs = dash.callback_context.inputs_list[0]
@@ -144,12 +143,15 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
             assert id["type"] == _COMPONENT_ID_TYPE
             id_inner = id["id_inner"]
             try:
+                input["value"] = input["value"].replace(" ", "")
+            except:
+                pass
+            try:
                 state[_param_string(id_inner, input["property"])] = _myrepr(
                     input["value"]
                 )
             except:
                 pass
-
         params = urlencode(state, safe="%/:?~#+!$,;'@()*[]", quote_via=quote)
         # params = urlencode(state, safe="%/:?~#+!$,;'@()*[]\"", quote_via=quote) #ORIGINAL#
         print(f"update_url_state values={values} params={params}")
