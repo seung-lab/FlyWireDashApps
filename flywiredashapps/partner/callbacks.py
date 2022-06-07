@@ -18,11 +18,11 @@ def register_callbacks(app, config=None):
         Output("submit_loader", "children"),
         Output("graph_div", "children"),
         Output("post_submit_div", "children"),
+        Output("download_div", "children"),
         Input("submit_button", "n_clicks"),
-        State("input_a", "value"),
-        State("input_b", "value"),
-        State("cleft_thresh_input", "value"),
-        prevent_initial_call=True,
+        State({"type": "url_helper", "id_inner": "input_a"}, "value",),
+        State({"type": "url_helper", "id_inner": "input_b"}, "value",),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value",),
     )
     def update_output(n_clicks, id_a, id_b, cleft_thresh):
         """Update app based on input.
@@ -34,14 +34,21 @@ def register_callbacks(app, config=None):
         cleft_thresh -- float value of cleft threshold field
         """
 
+        # avoids premature submission #
+        if id_a == None or id_b == None:
+            raise PreventUpdate
+        else:
+            pass
+
         # bad id handling #
-        if (len(id_a) != 18 and len(id_a != 7)) or (len(id_b) != 18 and len(id_b != 7)):
+        if (len(id_a) != 18 and len(id_a) != 7) or (len(id_b) != 18 and len(id_b) != 7):
             return [
                 [],
                 [],
                 "One or both IDs are invalid. Please enter 18-digit root or 7-digit nucleus IDs only.",
                 1,
                 "",
+                [],
                 [],
                 [],
             ]
@@ -59,6 +66,7 @@ def register_callbacks(app, config=None):
                 "",
                 [],
                 [],
+                [],
             ]
 
         # nuc id detection and conversion #
@@ -71,56 +79,49 @@ def register_callbacks(app, config=None):
         else:
             pass
 
-        # outdated id handling #
-        if (
-            checkFreshness(id_a, config) == False
-            or checkFreshness(id_b, config) == False
-        ):
-            return [[], [], "One or both IDs are outdated.", 1, "", [], []]
-        else:
-            pass
+        # bad id handling #
+        try:
+            if (
+                checkFreshness(id_a, config) == False
+                or checkFreshness(id_b, config) == False
+            ):
+                return [[], [], "One or both IDs are bad.", 1, "", [], [], []]
+            else:
+                pass
+        except:
+            return [[], [], "One or both IDs are bad.", 1, "", [], [], []]
 
         # makes nuc dfs #
         nuc_a_df = getNuc(id_a, config)
         nuc_b_df = getNuc(id_b, config)
 
-        # multinucleate id handling #
-        if len(nuc_a_df) > 1:
-            a_df = pd.DataFrame(
-                {
-                    "Quality": ["Root ID A", "Nuc ID A", "Nuc Coords A"],
-                    "Value": [id_a, "Multinucleate", "Multinucleate"],
-                }
-            )
-        else:
-            a_df = pd.DataFrame(
-                {
-                    "Quality": ["Root ID A", "Nuc ID A", "Nuc Coords A"],
-                    "Value": [
-                        id_a,
-                        nuc_a_df.loc[0, "Nuc ID"],
-                        nuc_a_df.loc[0, "Nucleus Coordinates"],
-                    ],
-                }
-            )
-        if len(nuc_b_df) > 1:
-            b_df = pd.DataFrame(
-                {
-                    "Quality": ["Root ID B", "Nuc ID B", "Nuc Coords B"],
-                    "Value": [id_b, "Multinucleate", "Multinucleate"],
-                }
-            )
-        else:
-            b_df = pd.DataFrame(
-                {
-                    "Quality": ["Root ID B", "Nuc ID B", "Nuc Coords B"],
-                    "Value": [
-                        id_b,
-                        nuc_b_df.loc[0, "Nuc ID"],
-                        nuc_b_df.loc[0, "Nucleus Coordinates"],
-                    ],
-                }
-            )
+        # handles cells without nuclei
+        try:
+            nuc_id_a = nuc_a_df.loc[0, "Nuc ID"]
+            nuc_loc_a = nuc_a_df.loc[0 : (len(nuc_a_df) - 1), "Nucleus Coordinates"]
+        except:
+            nuc_id_a = "No Nucleus"
+            nuc_loc_a = "No Nucleus"
+        try:
+            nuc_id_b = nuc_b_df.loc[0, "Nuc ID"]
+            nuc_loc_b = nuc_b_df.loc[0 : (len(nuc_b_df) - 1), "Nucleus Coordinates"]
+        except:
+            nuc_id_b = "No Nucleus"
+            nuc_loc_b = "No Nucleus"
+
+        # assigns nuc values to respective dtaframes #
+        a_df = pd.DataFrame(
+            {
+                "Quality": ["Root ID A", "Nuc ID A", "Nuc Coords A"],
+                "Value": [str(id_a), nuc_id_a, nuc_loc_a,],
+            }
+        )
+        b_df = pd.DataFrame(
+            {
+                "Quality": ["Root ID B", "Nuc ID B", "Nuc Coords B"],
+                "Value": [str(id_b), nuc_id_b, nuc_loc_b,],
+            }
+        )
 
         # concatenates a and b info into one df
         full_df = pd.concat([a_df, b_df], ignore_index=True)
@@ -195,7 +196,7 @@ def register_callbacks(app, config=None):
         post_submit_div = [
             # defines link generation button #
             dbc.Button(
-                "Generate NG Link Using Selected Partners",
+                "Generate NG Link Using Partners",
                 id="link_button",
                 n_clicks=0,
                 target="tab",
@@ -211,6 +212,21 @@ def register_callbacks(app, config=None):
             ),
         ]
 
+        download_button_div = (
+            dbc.Button(
+                "Download Partner Table as CSV File",
+                id="partner_download_button",
+                style={
+                    "width": "400px",
+                    "margin-right": "5px",
+                    "margin-left": "5px",
+                    "margin-top": "5px",
+                    "margin-bottom": "5px",
+                },
+            ),
+            dcc.Download(id="partner_download"),
+        )
+
         return [
             table_columns,
             table_data,
@@ -219,15 +235,16 @@ def register_callbacks(app, config=None):
             "",
             graph_div,
             post_submit_div,
+            download_button_div,
         ]
 
     # defines callback that generates neuroglancer link #
     @app.callback(
         Output("link_button", "href",),
         Input("submit_button", "n_clicks"),
-        State("input_a", "value"),
-        State("input_b", "value"),
-        State("cleft_thresh_input", "value"),
+        State({"type": "url_helper", "id_inner": "input_a"}, "value",),
+        State({"type": "url_helper", "id_inner": "input_b"}, "value",),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value",),
         State("table", "data",),
     )
     def makeLink(n_clicks, id_a, id_b, cleft_thresh, table_data):
@@ -244,11 +261,32 @@ def register_callbacks(app, config=None):
         table_df = pd.DataFrame(table_data)
 
         # makes list of nucleus coord strings #
-        nuc = [table_df.loc[2, "Value"], table_df.loc[5, "Value"]]
+        raw_nuc = [table_df.loc[2, "Value"], table_df.loc[5, "Value"]]
+
+        # convoluted, but allows for multinucleate handling #
+        nuc = []
+
+        for value in raw_nuc:
+            if type(value) == list:
+                for nuc_loc in value:
+                    nuc.append(str(nuc_loc))
+            else:
+                nuc.append(value)
 
         out_url = buildPartnerLink(id_a, id_b, cleft_thresh, nuc, config=config)
 
         return out_url
+
+    # defines callback to download summary table as csv on button press #
+    @app.callback(
+        Output("partner_download", "data"),
+        Input("partner_download_button", "n_clicks"),
+        State("table", "data"),
+        prevent_initial_call=True,
+    )
+    def downloadSummary(n_clicks, table_data):
+        summary_df = pd.DataFrame(table_data)
+        return dcc.send_data_frame(summary_df.to_csv, "partner_table.csv")
 
     pass
 

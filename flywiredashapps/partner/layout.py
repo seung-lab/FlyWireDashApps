@@ -56,10 +56,13 @@ def page_layout(state={}):
                             ),
                             # defines input A field #
                             dcc.Input(
-                                id="input_a",
-                                type="text",
-                                placeholder="Root/Nuc ID A",
-                                style={"width": "200px", "vertical-align": "top",},
+                                **create_component_kwargs(
+                                    state,
+                                    id_inner="input_a",
+                                    type="text",
+                                    placeholder="Root/Nuc ID A",
+                                    style={"width": "200px", "vertical-align": "top",},
+                                ),
                             ),
                         ],
                         style={"margin-left": "5px", "display": "inline-block",},
@@ -82,10 +85,13 @@ def page_layout(state={}):
                             ),
                             # defines input B field #
                             dcc.Input(
-                                id="input_b",
-                                type="text",
-                                placeholder="Root/Nuc ID B",
-                                style={"width": "200px", "vertical-align": "top",},
+                                **create_component_kwargs(
+                                    state,
+                                    id_inner="input_b",
+                                    type="text",
+                                    placeholder="Root/Nuc ID B",
+                                    style={"width": "200px", "vertical-align": "top",},
+                                ),
                             ),
                         ],
                         style={"margin-left": "5px", "display": "inline-block",},
@@ -108,10 +114,13 @@ def page_layout(state={}):
                             ),
                             # defines cleft score threshold input field #
                             dcc.Input(
-                                id="cleft_thresh_input",
-                                type="number",
-                                value=50,
-                                style={"width": "200px", "vertical-align": "top",},
+                                **create_component_kwargs(
+                                    state,
+                                    id_inner="cleft_thresh_input",
+                                    type="number",
+                                    value=50,
+                                    style={"width": "200px", "vertical-align": "top",},
+                                ),
                             ),
                         ],
                         style={"margin-left": "5px", "display": "inline-block",},
@@ -122,7 +131,6 @@ def page_layout(state={}):
             dbc.Button(
                 children=["Submit",],
                 id="submit_button",
-                n_clicks=0,
                 style={
                     "display": "inline-block",
                     "width": "400px",
@@ -140,25 +148,18 @@ def page_layout(state={}):
             # defines table #
             html.Div(
                 dash_table.DataTable(
-                    id="table",
-                    style_header={
-                        # "whiteSpace": "normal",
-                        # "height": "auto",
-                        "textAlign": "center",
-                    },
-                    style_cell={
-                        "minWidth": "200px",
-                        "width": "200px",
-                        "maxWidth": "200px",
-                    },
+                    id="table", style_data={"whiteSpace": "normal", "height": "auto",},
                 ),
                 style={
                     "margin-left": "5px",
                     "margin-right": "5px",
                     "margin-top": "5px",
                     "margin-bottom": "5px",
+                    "width": "400px",
                 },
             ),
+            # defines div for download button
+            html.Div(children=[], id="download_div",),
             # defines neurotransmitter plot display div #
             html.Div(
                 id="graph_div",

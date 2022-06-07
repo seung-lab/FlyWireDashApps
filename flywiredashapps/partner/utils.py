@@ -1,3 +1,4 @@
+from ast import Pass
 from ..common import lookup_utilities
 import time
 import json
@@ -32,11 +33,14 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}):
     # sets configuration for EM layer #
     img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
 
-    # makes df of nucleus coords from list #
-    nuc_coords_df = pd.DataFrame({"pt_position": nuc})
-    nuc_coords_df["pt_position"] = [
-        stringToIntCoords(x) for x in nuc_coords_df["pt_position"]
-    ]
+    # # makes df of int-converted nucleus coords from list #
+    fixed_nuc = []
+    for x in nuc:
+        try:
+            fixed_nuc.append(stringToIntCoords(x))
+        except:
+            pass
+    nuc_coords_df = pd.DataFrame({"pt_position": fixed_nuc})
 
     # makes dfs of raw synapses #
     a_to_b_raw_df = getSyn(
@@ -93,11 +97,16 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}):
     )
 
     # sets default view #
-    view_options = {
-        "position": nuc_coords_df.loc[0, "pt_position"],
-        # "position": [119412, 62016, 3539,],
-        "zoom_3d": 10000,
-    }
+    try:
+        view_options = {
+            "position": nuc_coords_df.loc[0, "pt_position"],
+            "zoom_3d": 10000,
+        }
+    except:
+        view_options = {
+            "position": [119412, 62016, 3539,],
+            "zoom_3d": 10000,
+        }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
     core_sb = StateBuilder([img, seg, nuc_annos], view_kws=view_options,)
@@ -228,7 +237,7 @@ def getSyn(
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= cleft_thresh].reset_index(drop=True)
+    syn_df = syn_df[syn_df["cleft_score"] >= int(cleft_thresh)].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 
@@ -502,12 +511,4 @@ def stringToIntCoords(string_coords):
     string_coords -- x,y,z coordinates in string format with brackets 
     """
     coords = [int(x.strip(" []")) for x in string_coords.split(",")]
-    # int(y.strip(" []")) for y in x.split(",")
-    # print(string_coords)
-    # print(type(string_coords))
-    # # converts coordinates to ints #
-    # coords = list(map(int, string_coords))
-    # print(coords)
-    print(type(coords))
-    print(type(coords[0]))
     return coords
