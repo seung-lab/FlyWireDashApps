@@ -40,6 +40,24 @@ def register_callbacks(app, config=None):
         else:
             pass
 
+        # removes quotes from input strings #
+        try:
+            id_a = str(id_a).replace('"', "")
+        except:
+            pass
+        try:
+            id_a = str(id_a).replace("'", "")
+        except:
+            pass
+        try:
+            id_b = str(id_b).replace('"', "")
+        except:
+            pass
+        try:
+            id_b = str(id_b).replace("'", "")
+        except:
+            pass
+
         # bad id handling #
         if (len(id_a) != 18 and len(id_a) != 7) or (len(id_b) != 18 and len(id_b) != 7):
             return [

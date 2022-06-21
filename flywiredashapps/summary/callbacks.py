@@ -18,9 +18,25 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_field"}, "value",),
     )
     def update_output(n_clicks, id_list):
+        """Update app based on input.
+        
+        Keyword arguments:
+        n_clicks -- int number of times the submit button has been pressed
+        id_list -- str formatted list of roots, nucs, and/or coords for input
+        """
         if id_list != None:
 
             start_time = time.time()
+
+            # removes quotes from input #
+            try:
+                id_list = str(id_list).replace('"', "")
+            except:
+                pass
+            try:
+                id_list = str(id_list).replace("'", "")
+            except:
+                pass
 
             post_div = [
                 # defines summary downloader #

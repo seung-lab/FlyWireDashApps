@@ -46,6 +46,16 @@ def register_callbacks(app, config=None):
         else:
             pass
 
+        # removes quotes from input string #
+        try:
+            query_id = str(query_id).replace('"', "")
+        except:
+            pass
+        try:
+            query_id = str(query_id).replace("'", "")
+        except:
+            pass
+
         # splits 'ids' string into list #
         query_id = str(query_id).split(",")
 

@@ -142,8 +142,17 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
             assert isinstance(id, Dict)
             assert id["type"] == _COMPONENT_ID_TYPE
             id_inner = id["id_inner"]
+            # removes spaces and quotes #
             try:
                 input["value"] = input["value"].replace(" ", "")
+            except:
+                pass
+            try:
+                input["value"] = input["value"].replace('"','')
+            except:
+                pass
+            try:
+                input["value"] = input["value"].replace("'","")
             except:
                 pass
             try:
