@@ -34,3 +34,10 @@ def register_callbacks(app, config=None):
 
         return "Chain built in " + str(total_time) + " seconds: " + str(chain)
 
+    pass
+
+
+# runs program #
+if __name__ == "__main__":
+    app.run_server()
+

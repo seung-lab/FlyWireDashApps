@@ -120,3 +120,12 @@ def page_layout(state={}):
         ),
     )
 
+    return layout
+
+
+def app_layout():
+    # https://dash.plotly.com/urls "Dynamically Create a Layout for Multi-Page App Validation"
+    if flask.has_request_context():  # for real
+        return url_bar_and_content_div
+    # validation only
+    return html.Div([url_bar_and_content_div, *page_layout()])
