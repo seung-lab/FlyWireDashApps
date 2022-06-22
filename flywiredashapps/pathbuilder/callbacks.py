@@ -8,9 +8,9 @@ from .utils import *
 
 
 def register_callbacks(app, config=None):
-    # defines callback that generates main tables and violin plots #
+    # defines callback that generates chain on submit button press #
     @app.callback(
-        Output("message_taxt", "value"),
+        Output("message_text", "value"),
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "thresh_field"}, "value"),
