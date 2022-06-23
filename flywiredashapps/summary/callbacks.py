@@ -53,7 +53,7 @@ def register_callbacks(app, config=None):
                                 "margin-bottom": "5px",
                             },
                         ),
-                        # defines link button loader #
+                        # defines NG link button loader #
                         html.Div(
                             dcc.Loading(id="link_loader", type="default", children=""),
                             style={
@@ -62,7 +62,7 @@ def register_callbacks(app, config=None):
                                 "width": "1000px",
                             },
                         ),
-                        # defines link generation button #
+                        # defines NG link generation button #
                         dbc.Button(
                             "Generate NG Link Using Selected Root IDs",
                             id="link_button",
@@ -73,24 +73,77 @@ def register_callbacks(app, config=None):
                                 "margin-right": "5px",
                                 "margin-left": "5px",
                                 "margin-bottom": "5px",
-                                "width": "400px",
-                                # "display": "inline-block",
+                                "width": "420px",
                                 "vertical-align": "top",
                             },
                         ),
+                        # defines Connectivity App link button loader #
+                        html.Div(
+                            dcc.Loading(
+                                id="connectivity_link_loader",
+                                type="default",
+                                children="",
+                            ),
+                            style={
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "width": "1000px",
+                            },
+                        ),
+                        # defines Connectivity App link generation button #
+                        dbc.Button(
+                            "Select Neuron to Port to Connectivity App",
+                            id="connectivity_link_button",
+                            n_clicks=0,
+                            target="tab",
+                            style={
+                                "margin-top": "5px",
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "margin-bottom": "5px",
+                                "width": "420px",
+                                "vertical-align": "top",
+                            },
+                        ),
+                        # defines Partner App link button loader #
+                        html.Div(
+                            dcc.Loading(
+                                id="partner_link_loader", type="default", children="",
+                            ),
+                            style={
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "width": "1000px",
+                            },
+                        ),
+                        # defines Partner App link generation button #
+                        dbc.Button(
+                            "Select 2 Neurons to Port to Partner App",
+                            id="partner_link_button",
+                            n_clicks=0,
+                            target="tab",
+                            style={
+                                "margin-top": "5px",
+                                "margin-right": "5px",
+                                "margin-left": "5px",
+                                "margin-bottom": "5px",
+                                "width": "420px",
+                                "vertical-align": "top",
+                            },
+                        ),
+                        html.Br(),
                         # defines button to clear table selections #
                         dbc.Button(
-                            "Clear Partner Selections",
+                            "Clear Selections",
                             id="clear_button",
                             n_clicks=0,
                             color="danger",
                             style={
-                                "width": "400px",
+                                "width": "420px",
                                 "margin-right": "5px",
                                 "margin-left": "5px",
                                 "margin-top": "5px",
                                 "margin-bottom": "25px",
-                                # "display": "inline-block",
                                 "vertical-align": "top",
                             },
                         ),
@@ -164,7 +217,6 @@ def register_callbacks(app, config=None):
 
         # removes bad IDs #
         bad_mask = [table_data[x]["Nuc ID"] != "BAD ID" for x in rows]
-        print(bad_mask)
         root_list = list(compress(root_list, bad_mask))
 
         if root_list == []:
@@ -213,6 +265,76 @@ def register_callbacks(app, config=None):
             None,
             [],
         ]
+
+    # defines callback that generates connectivity app link  #
+    @app.callback(
+        Output("connectivity_link_button", "href",),
+        Output("connectivity_link_button", "children",),
+        Output("connectivity_link_loader", "children",),
+        Input("table", "selected_rows",),
+        State("table", "data",),
+        prevent_initial_call=True,
+    )
+    def makeConnLink(rows, table_data):
+        """Create connectivity app link using selected IDs.
+
+        Keyword arguments:
+        rows -- list of selected upstream row indices
+        table_data -- dataframe of summary table data
+        """
+
+        # generates root list using table data and selected rows #
+        root_list = [table_data[x]["Root ID"] for x in rows]
+        bad_list = [table_data[x]["Current"] for x in rows]
+
+        # handles errors #
+        if len(root_list) == 0:
+            return ["", "Select Neuron to Port to Connectivity App", ""]
+        if len(root_list) > 1:
+            return ["", "Select Only 1 Neuron to Port to Connectivity App", ""]
+        elif bad_list[0] == "BAD ID" or bad_list[0] == False:
+            return ["", "Select Current, Valid Neuron to Port to Connectivity App", ""]
+
+        # builds url using portUrl function #
+        out_url = portUrl(str(root_list[0]), "connectivity")
+
+        # returns url string, alters button text, sends empty string for loader #
+        return [out_url, "Send selected neuron to Connectivity App", ""]
+
+    # defines callback that generates partner app link  #
+    @app.callback(
+        Output("partner_link_button", "href",),
+        Output("partner_link_button", "children",),
+        Output("partner_link_loader", "children",),
+        Input("table", "selected_rows",),
+        State("table", "data",),
+        prevent_initial_call=True,
+    )
+    def makePartLink(rows, table_data):
+        """Create partner app link using selected IDs.
+
+        Keyword arguments:
+        rows -- list of selected upstream row indices
+        table_data -- dataframe of summary table data
+        """
+
+        # generates root list using table data and selected rows #
+        root_list = [table_data[x]["Root ID"] for x in rows]
+        bad_list = [table_data[x]["Current"] for x in rows]
+
+        # handles errors #
+        if len(root_list) == 0:
+            return ["", "Select 2 neurons to port to Partner App", ""]
+        if len(root_list) != 2:
+            return ["", "Select exactly 2 neurons to send to Partner App", ""]
+        elif "BAD ID" in bad_list or False in bad_list:
+            return ["", "Select only current, valid neurons to send to Partner App", ""]
+
+        # builds url using portUrl function #
+        out_url = portUrl(str(root_list)[1:-1], "partner")
+
+        # returns url string, alters button text, sends empty string for loader #
+        return [out_url, "Send selected neurons to Partner App", ""]
 
     # # defines callback that throws error message if link button is clicked with no selections #
     # @app.callback(
