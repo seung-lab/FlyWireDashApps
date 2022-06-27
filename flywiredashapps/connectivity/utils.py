@@ -942,30 +942,27 @@ def nucToRoot(nuc_id, config={}):
     return root_id
 
 
-def portUrl(input_ids, app_choice):
+def portUrl(input_ids, app_choice, config={}):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
     input_ids -- string of selected 18-digit root ids separated by commas
     app choice -- string choice of which app to send the inputs to
+    config -- dictionary of config settings (default {})
     """
 
-    base = (
-        "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_"
-    )
-
     if app_choice == "summary":
-        app = "summary/"
+        base = config.get("sum_app_base_url", None)
         input_ids = input_ids.replace("'", "").replace(" ", "")
         query = "?input_field=" + input_ids
     elif app_choice == "partner":
-        app = "partners/"
+        base = config.get("part_app_base_url", None)
         input_list = input_ids.split(",")
         input_a = input_list[0].strip()[1:-1]
         input_b = input_list[1].strip()[1:-1]
         query = "?input_a=" + input_a + "&input_b=" + input_b + "&cleft_thresh_input=50"
 
-    out_url = base + app + query
+    out_url = base + query
     return out_url
 
 

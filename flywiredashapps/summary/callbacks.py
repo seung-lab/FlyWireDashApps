@@ -167,7 +167,9 @@ def register_callbacks(app, config=None):
                 ]
             else:
 
-                output_df = rootListToDataFrame(root_list, config)
+                # removes duplicates #
+                root_set = set(root_list)
+                output_df = rootListToDataFrame(list(root_set), config)
 
                 # creates column list based on dataframe columns #
                 column_list = [{"name": i, "id": i} for i in output_df.columns]
@@ -179,8 +181,22 @@ def register_callbacks(app, config=None):
 
                 # relays time information #
                 message_text = "Query completed in " + elapsed_time + " seconds."
+                mess_rows = 1
 
-                return [post_div, column_list, data_dict, message_text, 1, ""]
+                # adds message if any duplicates were removed #
+                dupes = len(root_list) - len(root_set)
+                if dupes == 1:
+                    message_text = (
+                        message_text + " " + str(dupes) + " duplicate entry removed."
+                    )
+                    mess_rows = 2
+                if dupes > 1:
+                    message_text = (
+                        message_text + " " + str(dupes) + " duplicate entries removed."
+                    )
+                    mess_rows = 2
+
+                return [post_div, column_list, data_dict, message_text, mess_rows, ""]
         else:
             raise PreventUpdate
 
@@ -296,7 +312,7 @@ def register_callbacks(app, config=None):
             return ["", "Select Current, Valid Neuron to Port to Connectivity App", ""]
 
         # builds url using portUrl function #
-        out_url = portUrl(str(root_list[0]), "connectivity")
+        out_url = portUrl(str(root_list[0]), "connectivity", config)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neuron to Connectivity App", ""]
@@ -331,7 +347,7 @@ def register_callbacks(app, config=None):
             return ["", "Select only current, valid neurons to send to Partner App", ""]
 
         # builds url using portUrl function #
-        out_url = portUrl(str(root_list)[1:-1], "partner")
+        out_url = portUrl(str(root_list)[1:-1], "partner", config)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]

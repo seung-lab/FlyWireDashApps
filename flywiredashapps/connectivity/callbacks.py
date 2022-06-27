@@ -614,7 +614,7 @@ def register_callbacks(app, config=None):
         elif len(full_list) > 2:
             return ["", "Select only 1-2 neurons to port to Partner App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "partner")
+        out_url = portUrl(str(full_list)[1:-1], "partner", config)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
@@ -652,7 +652,7 @@ def register_callbacks(app, config=None):
         if len(full_list) > 20:
             return ["", "Select 20 or fewer neurons to port to Summary App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "summary")
+        out_url = portUrl(str(full_list)[1:-1], "summary", config)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]

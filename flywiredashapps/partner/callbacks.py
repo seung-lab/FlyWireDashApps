@@ -108,6 +108,19 @@ def register_callbacks(app, config=None):
                 pass
         except:
             return [[], [], "One or both IDs are bad.", 1, "", [], [], []]
+        if id_a == id_b:
+            return [
+                [],
+                [],
+                "Both IDs are from the same neuron, please submit 2 different neurons.",
+                2,
+                "",
+                [],
+                [],
+                [],
+            ]
+        else:
+            pass
 
         # makes nuc dfs #
         nuc_a_df = getNuc(id_a, config)
@@ -212,7 +225,7 @@ def register_callbacks(app, config=None):
         ]
 
         post_submit_div = [
-            # defines link generation button #
+            # defines NG link generation button #
             dbc.Button(
                 "Generate NG Link Using Partners",
                 id="link_button",
@@ -223,7 +236,55 @@ def register_callbacks(app, config=None):
                     "margin-right": "5px",
                     "margin-left": "5px",
                     "margin-bottom": "5px",
-                    "width": "400px",
+                    "width": "420px",
+                    "display": "inline-block",
+                    "vertical-align": "top",
+                },
+            ),
+            # defines conn_A link generation button #
+            dbc.Button(
+                "Port Neuron A to Connectivity App",
+                id="connectivity_link_button_A",
+                n_clicks=0,
+                target="tab",
+                style={
+                    "margin-top": "5px",
+                    "margin-right": "5px",
+                    "margin-left": "5px",
+                    "margin-bottom": "5px",
+                    "width": "420px",
+                    "display": "inline-block",
+                    "vertical-align": "top",
+                },
+            ),
+            # defines conn_B link generation button #
+            dbc.Button(
+                "Port Neuron B to Connectivity App",
+                id="connectivity_link_button_B",
+                n_clicks=0,
+                target="tab",
+                style={
+                    "margin-top": "5px",
+                    "margin-right": "5px",
+                    "margin-left": "5px",
+                    "margin-bottom": "5px",
+                    "width": "420px",
+                    "display": "inline-block",
+                    "vertical-align": "top",
+                },
+            ),
+            # defines summary link generation button #
+            dbc.Button(
+                "Port Neurons to Summary App",
+                id="summary_link_button",
+                n_clicks=0,
+                target="tab",
+                style={
+                    "margin-top": "5px",
+                    "margin-right": "5px",
+                    "margin-left": "5px",
+                    "margin-bottom": "5px",
+                    "width": "420px",
                     "display": "inline-block",
                     "vertical-align": "top",
                 },
@@ -305,6 +366,38 @@ def register_callbacks(app, config=None):
     def downloadSummary(n_clicks, table_data):
         summary_df = pd.DataFrame(table_data)
         return dcc.send_data_frame(summary_df.to_csv, "partner_table.csv")
+
+    # defines callback that generates connectivity app link  #
+    @app.callback(
+        Output("connectivity_link_button_A", "href",),
+        Output("connectivity_link_button_B", "href",),
+        Output("summary_link_button", "href",),
+        Input("post_submit_div", "children"),
+        State("table", "data",),
+    )
+    def makeOutLinks(n_clicks, table_data):
+        """Create outbound app links using selected IDs.
+
+        Keyword arguments:
+        n_clicks -- unused dummy for trigger
+        rows -- list of selected upstream row indices
+        table_data -- dataframe of summary table data
+        """
+
+        root_A, root_B = [table_data[0]["Value"], table_data[3]["Value"]]
+
+        print(root_A, root_B)
+        print(type(root_A), type(root_B))
+
+        both_roots = root_A + "," + root_B
+
+        # builds url using portUrl function #
+        con_url_A = portUrl(root_A, "connectivity", config)
+        con_url_B = portUrl(root_B, "connectivity", config)
+        sum_url = portUrl(both_roots, "summary", config)
+
+        # returns url string, alters button text, sends empty string for loader #
+        return [con_url_A, con_url_B, sum_url]
 
     pass
 

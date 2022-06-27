@@ -504,6 +504,26 @@ def nucToRoot(nuc_id, config={}):
     return root_id
 
 
+def portUrl(input_ids, app_choice, config={}):
+    """Convert root ids into outbound url based on app choice.
+
+    Keyword arguments:
+    input_ids -- string of selected 18-digit root ids separated by commas
+    app choice -- string choice of which app to send the inputs to
+    config -- dictionary of config settings (default {})
+    """
+
+    if app_choice == "connectivity":
+        base = config.get("con_app_base_url", None)
+        query = "?input_field=" + input_ids + "&cleft_thresh_field=50"
+    elif app_choice == "summary":
+        base = config.get("sum_app_base_url", None)
+        query = "?input_field=" + input_ids
+
+    out_url = base + query
+    return out_url
+
+
 def stringToIntCoords(string_coords):
     """Convert coordinate string to list of integers.
     
