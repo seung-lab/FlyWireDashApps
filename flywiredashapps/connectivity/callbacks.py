@@ -292,6 +292,59 @@ def register_callbacks(app, config=None):
                             "width": "1000px",
                         },
                     ),
+                    # defines Summary App link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="summary_link_loader", type="default", children="",
+                        ),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                    # defines Summary App link generation button #
+                    dbc.Button(
+                        "Select Neuron to Port to Summary App",
+                        id="summary_link_button",
+                        n_clicks=0,
+                        target="tab",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines Partner App link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="partner_link_loader", type="default", children="",
+                        ),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                    # defines Partner App link generation button #
+                    dbc.Button(
+                        "Select 2 Neurons to Port to Partner App",
+                        id="partner_link_button",
+                        n_clicks=0,
+                        target="tab",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    html.Br(),
                 ],
             ),
         ]
@@ -521,6 +574,88 @@ def register_callbacks(app, config=None):
         downstream_df = pd.DataFrame(table_data)
         downstream_df.head()
         return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
+
+    # defines callback that generates partner app link  #
+    @app.callback(
+        Output("partner_link_button", "href",),
+        Output("partner_link_button", "children",),
+        Output("partner_link_loader", "children",),
+        Input("incoming_table", "selected_rows",),
+        Input("outgoing_table", "selected_rows",),
+        State("summary_table", "data",),
+        State("incoming_table", "data",),
+        State("outgoing_table", "data",),
+        prevent_initial_call=True,
+    )
+    def makePartLink(in_rows, out_rows, sum_data, in_data, out_data):
+        """Create partner app link using selected IDs.
+
+        Keyword arguments:
+        in_rows -- list of selected incoming row indices
+        out_rows -- list of selected outgoing row indices
+        sum_data -- dataframe of summary table data
+        in_data -- dataframe of incoming table data
+        out_data -- dataframe of outgoing table data
+        """
+
+        # generates root list using table data and selected rows #
+        in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
+        out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        sum_list = [sum_data[0]["Root ID"]]
+        full_list = in_list + out_list
+
+        # handles errors #
+        if len(full_list) == 0:
+            return ["", "Select 1-2 neurons to port to Partner App", ""]
+        elif len(full_list) == 1:
+            full_list += sum_list
+        elif len(full_list) == 2:
+            pass
+        elif len(full_list) > 2:
+            return ["", "Select only 1-2 neurons to port to Partner App", ""]
+        # builds url using portUrl function #
+        out_url = portUrl(str(full_list)[1:-1], "partner")
+
+        # returns url string, alters button text, sends empty string for loader #
+        return [out_url, "Send selected neurons to Partner App", ""]
+
+    # defines callback that generates summary app link  #
+    @app.callback(
+        Output("summary_link_button", "href",),
+        Output("summary_link_button", "children",),
+        Output("summary_link_loader", "children",),
+        Input("incoming_table", "selected_rows",),
+        Input("outgoing_table", "selected_rows",),
+        State("summary_table", "data",),
+        State("incoming_table", "data",),
+        State("outgoing_table", "data",),
+        prevent_initial_call=True,
+    )
+    def makeSumLink(in_rows, out_rows, sum_data, in_data, out_data):
+        """Create partner app link using selected IDs.
+
+        Keyword arguments:
+        in_rows -- list of selected incoming row indices
+        out_rows -- list of selected outgoing row indices
+        sum_data -- dataframe of summary table data
+        in_data -- dataframe of incoming table data
+        out_data -- dataframe of outgoing table data
+        """
+
+        # generates root list using table data and selected rows #
+        in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
+        out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        sum_list = [sum_data[0]["Root ID"]]
+        full_list = sum_list + in_list + out_list
+
+        # handles errors #
+        if len(full_list) > 20:
+            return ["", "Select 20 or fewer neurons to port to Summary App", ""]
+        # builds url using portUrl function #
+        out_url = portUrl(str(full_list)[1:-1], "summary")
+
+        # returns url string, alters button text, sends empty string for loader #
+        return [out_url, "Send selected neurons to Summary App", ""]
 
     pass
 
