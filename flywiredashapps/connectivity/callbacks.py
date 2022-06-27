@@ -256,23 +256,7 @@ def register_callbacks(app, config=None):
                             "margin-right": "5px",
                             "margin-left": "5px",
                             "margin-bottom": "5px",
-                            "width": "400px",
-                            "display": "inline-block",
-                            "vertical-align": "top",
-                        },
-                    ),
-                    # defines button to clear table selections #
-                    dbc.Button(
-                        "Clear Partner Selections",
-                        id="clear_button",
-                        n_clicks=0,
-                        color="danger",
-                        style={
-                            "width": "400px",
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "margin-top": "5px",
-                            "margin-bottom": "25px",
+                            "width": "420px",
                             "display": "inline-block",
                             "vertical-align": "top",
                         },
@@ -345,6 +329,22 @@ def register_callbacks(app, config=None):
                         },
                     ),
                     html.Br(),
+                    # defines button to clear table selections #
+                    dbc.Button(
+                        "Clear Partner Selections",
+                        id="clear_button",
+                        n_clicks=0,
+                        color="danger",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "25px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                    ),
                 ],
             ),
         ]
