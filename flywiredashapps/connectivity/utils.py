@@ -162,18 +162,6 @@ def buildLink(
             "zoom_3d": 10000,
         }
 
-    #  ORIGINAL FOR SAFETY #
-    # if int(nucleus[0]) > 0:
-    #     view_options = {
-    #         "position": [int(x) for x in nucleus],
-    #         "zoom_3d": 2000,
-    #     }
-    # else:
-    #     view_options = {
-    #         "position": [119412, 62016, 3539,],
-    #         "zoom_3d": 10000,
-    #     }
-
     # defines 'sb' by passing in rules for img, seg, and anno layers #
     up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
     down_sb = StateBuilder([down_anno])
@@ -213,24 +201,6 @@ def checkFreshness(root_id, config={}):
 
     # returns True if root id is current, False if not #
     return client.chunkedgraph.is_latest_roots(root_id)
-
-
-# TEMPORARILY DISABLED #
-# def checkValidity(root_id, config={}):
-#     """Check to see if root id is valid.
-
-#     Keyword arguments:
-#     root_id -- 18-digit int-format root id number
-#     config -- dictionary of config settings (default {})
-#     """
-
-#     # sets client #
-#     client = lookup_utilities.make_client(
-#         config.get("datastack", None), config.get("server_address", None)
-#     )
-
-#     # returns True if root id is valid, False if not #
-#     return client.chunkedgraph.is_valid_nodes(root_id)
 
 
 def coordsToRoot(coords, config={}):
@@ -378,7 +348,7 @@ def getSyn(
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= int(cleft_thresh)].reset_index(drop=True)
+    syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 
@@ -462,7 +432,7 @@ def getSynNoCache(
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= cleft_thresh].reset_index(drop=True)
+    syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 

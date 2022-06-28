@@ -237,7 +237,7 @@ def getSyn(
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= int(cleft_thresh)].reset_index(drop=True)
+    syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 

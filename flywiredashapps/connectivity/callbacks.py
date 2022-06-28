@@ -64,10 +64,6 @@ def register_callbacks(app, config=None):
         query_id = [str(x.strip("[")) for x in query_id]
         query_id = [int(str(x.strip("]"))) for x in query_id]
 
-        # temporarily disabled
-        # validity = checkValidity(query_id, config)
-        # print("ROOT:", query_id, "VALIDITY:", validity)
-
         # handles multiple id sumbission #
         if (len(query_id) != 1 and len(query_id) != 3) or (
             len(query_id) == 3 and len(str(query_id[0])) == len(str(query_id[2]))
@@ -470,7 +466,6 @@ def register_callbacks(app, config=None):
         up_data -- dataframe of incoming table data
         down_data -- dataframe of outgoing table data
         cleft_thresh -- float value of cleft threshold field
-        cb -- bool to determine colorblind option
         """
 
         # gets id of queried neuron from table #
