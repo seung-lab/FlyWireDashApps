@@ -14,6 +14,9 @@ flywire_config = {
     "datastack": "flywire_fafb_production",
     "server_address": "https://global.daf-apis.com",
     "syn_position_column": "pre_pt",
+    "con_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_connectivity/",
+    "sum_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_summary/",
+    "part_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_partners/",
 }
 
 fanc_config = {
