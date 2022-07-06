@@ -67,7 +67,7 @@ def register_callbacks(app, config=None):
                             "Generate NG Link Using Selected Root IDs",
                             id="link_button",
                             n_clicks=0,
-                            target="tab",
+                            target="_blank",
                             style={
                                 "margin-top": "5px",
                                 "margin-right": "5px",
@@ -95,7 +95,7 @@ def register_callbacks(app, config=None):
                             "Select Neuron to Port to Connectivity App",
                             id="connectivity_link_button",
                             n_clicks=0,
-                            target="tab",
+                            target="_blank",
                             style={
                                 "margin-top": "5px",
                                 "margin-right": "5px",
@@ -121,7 +121,7 @@ def register_callbacks(app, config=None):
                             "Select 2 Neurons to Port to Partner App",
                             id="partner_link_button",
                             n_clicks=0,
-                            target="tab",
+                            target="_blank",
                             style={
                                 "margin-top": "5px",
                                 "margin-right": "5px",
