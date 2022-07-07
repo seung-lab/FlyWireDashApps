@@ -4,7 +4,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 import flask
 import datetime
-from .utils import getUnixTime
+from .utils import getTime
 from ..common.dash_url_helper import create_component_kwargs, State
 
 title = "Fly Connectivity Viewer"
@@ -125,7 +125,7 @@ def page_layout(state={}):
                             state,
                             id_inner="timestamp_field",
                             type="text",
-                            placeholder=getUnixTime(),
+                            placeholder=getTime(),
                             style={
                                 "display": "inline-block",
                                 "width": "120px",

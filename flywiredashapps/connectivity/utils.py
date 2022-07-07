@@ -491,10 +491,14 @@ def getSynNoCache(
 
 
 def getTime():
+    """Get current time in datetime.datetime format.
+    """
     return datetime.datetime.utcnow()
 
 
 def getUnixTime():
+    """Get current time in unix format.
+    """
     return calendar.timegm(getTime().utctimetuple())
 
 
@@ -1003,5 +1007,19 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     return nuc_coords_df
 
 
+def strToTime(string_timestamp):
+    """Convert string timestamp to dateime.datetime.
+    
+    Keyword Arguments:
+    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481
+    """
+    datetime.datetime.strptime(string_timestamp, "%Y-%m-%d %H:%M:%S.%f")
+
+
 def timestampToUnix(stamp):
+    """Convert datetime.datetime format timestamp to unix.
+    
+    Keyword Arguments:
+    stamp -- datetime.datetime format timestamp
+    """
     return calendar.timegm(stamp.utctimetuple())
