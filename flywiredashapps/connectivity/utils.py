@@ -54,7 +54,7 @@ def buildLink(
     color_list = [query_color] + up_cols + down_cols
 
     # builds nuc coords df using root id list #
-    nuc_coords_df = rootsToNucCoords(id_list, config)
+    nuc_coords_df = rootsToNucCoords(id_list, config, timestamp=timestamp)
 
     # sets client using flywire production datastack #
     client = lookup_utilities.make_client(
@@ -84,6 +84,7 @@ def buildLink(
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
+                timestamp=timestamp,
             )[0]
             up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
         for x in down_ids:
@@ -93,6 +94,7 @@ def buildLink(
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
+                timestamp=timestamp,
             )[0]
             down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
     elif up_ids[0] == 0 and down_ids[0] != 0:
@@ -105,6 +107,7 @@ def buildLink(
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
+                timestamp=timestamp,
             )[0]
             down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
     elif up_ids[0] != 0 and down_ids[0] == 0:
@@ -117,6 +120,7 @@ def buildLink(
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
+                timestamp=timestamp,
             )[0]
             up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
     else:
