@@ -117,8 +117,12 @@ def buildLink(
         # makes truncated df of pre & post coords #
         up_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in up_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in up_syns_df["post_pt_position"]],
+                "pre": [
+                    nmToNG(x) for x in up_syns_df[config.get("syn_pre_pos_col", None)]
+                ],
+                "post": [
+                    nmToNG(x) for x in up_syns_df[config.get("syn_post_pos_col", None)]
+                ],
             }
         )
     else:
@@ -127,15 +131,20 @@ def buildLink(
         # makes truncated df of pre & post coords #
         down_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in down_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in down_syns_df["post_pt_position"]],
+                "pre": [
+                    nmToNG(x) for x in down_syns_df[config.get("syn_pre_pos_col", None)]
+                ],
+                "post": [
+                    nmToNG(x)
+                    for x in down_syns_df[config.get("syn_post_pos_col", None)]
+                ],
             }
         )
     else:
         down_coords_df = pd.DataFrame()
 
     # defines configuration for point & line annotations #
-    points = PointMapper(point_column="pt_position")
+    points = PointMapper(point_column=config.get("nuc_pos_col", None))
     lines = LineMapper(point_column_a="pre", point_column_b="post",)
 
     # defines configuration for annotation layers #
@@ -262,8 +271,8 @@ def getNuc(root_id, config={}):
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1",
-        filter_in_dict={"pt_root_id": [root_id]},
+        config.get("nuc_table", None),
+        filter_in_dict={config.get("nuc_root_col", None): [root_id]},
         materialization_version=mat_vers,
     )
 
@@ -279,14 +288,16 @@ def getNuc(root_id, config={}):
         return out_df.astype(str)
 
     # converts nucleus coordinates from n to 4x4x40 resolution #
-    nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]]
+    nuc_df[config.get("nuc_pos_col", None)] = [
+        nmToNG(i) for i in nuc_df[config.get("nuc_pos_col", None)]
+    ]
 
     # creates output df using root, nuc id, and coords to keep aligned #
     out_df = pd.DataFrame(
         {
-            "Root ID": list(nuc_df["pt_root_id"]),
-            "Nuc ID": list(nuc_df["id"]),
-            "Nucleus Coordinates": list(nuc_df["pt_position"]),
+            "Root ID": list(nuc_df[config.get("nuc_root_col", None)]),
+            "Nuc ID": list(nuc_df[config.get("nuc_id_col", None)]),
+            "Nucleus Coordinates": list(nuc_df[config.get("nuc_pos_col", None)]),
         }
     )
 
@@ -295,7 +306,12 @@ def getNuc(root_id, config={}):
 
 @lru_cache(maxsize=None)
 def getSyn(
-    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+    pre_root=0,
+    post_root=0,
+    cleft_thresh=0.0,
+    datastack_name=None,
+    server_address=None,
+    config={},
 ):
     """Create a cached table of synapses for a given root id.
 
@@ -303,6 +319,7 @@ def getSyn(
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
+    config -- dictionary of config settings (default {})
     """
 
     # sets client #
@@ -314,27 +331,53 @@ def getSyn(
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
+            [
+                [config.get("syn_table", None), config.get("syn_id_col", None)],
+                [
+                    config.get("neuropil_table", None),
+                    config.get("neuropil_id_col", None),
+                ],
+            ],
+            filter_in_dict={
+                config.get("syn_table", None): {
+                    config.get("syn_pre_col", None): [pre_root]
+                }
+            },
             suffixes=["syn", "nuc"],
             materialization_version=mat_vers,
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
+            [
+                [config.get("syn_table", None), config.get("syn_id_col", None)],
+                [
+                    config.get("neuropil_table", None),
+                    config.get("neuropil_id_col", None),
+                ],
+            ],
+            filter_in_dict={
+                config.get("syn_table", None): {
+                    config.get("syn_post_col", None): [post_root]
+                }
+            },
             suffixes=["syn", "nuc"],
             materialization_version=mat_vers,
         )
     else:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+            [
+                [config.get("syn_table", None), config.get("syn_id_col", None)],
+                [
+                    config.get("neuropil_table", None),
+                    config.get("neuropil_id_col", None),
+                ],
+            ],
             filter_in_dict={
-                "synapses_nt_v1": {
-                    "pre_pt_root_id": [pre_root],
-                    "post_pt_root_id": [post_root],
+                config.get("syn_table", None): {
+                    config.get("syn_pre_col", None): [pre_root],
+                    config.get("syn_post_col", None): [post_root],
                 }
             },
             suffixes=["syn", "nuc"],
@@ -348,20 +391,25 @@ def getSyn(
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
-    syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
+    syn_df = syn_df[
+        syn_df[config.get("syn_cleft_col", None)] >= float(cleft_thresh)
+    ].reset_index(drop=True)
 
     cleft_num = len(syn_df)
 
     # removes autapses #
-    syn_df = syn_df[syn_df["pre_pt_root_id"] != syn_df["post_pt_root_id"]].reset_index(
-        drop=True
-    )
+    syn_df = syn_df[
+        syn_df[config.get("syn_pre_col", None)]
+        != syn_df[config.get("syn_post_col", None)]
+    ].reset_index(drop=True)
 
     aut_num = len(syn_df)
 
     # removes 0-roots #
-    syn_df = syn_df[syn_df["pre_pt_root_id"] != 0].reset_index(drop=True)
-    syn_df = syn_df[syn_df["post_pt_root_id"] != 0].reset_index(drop=True)
+    syn_df = syn_df[syn_df[config.get("syn_pre_col", None)] != 0].reset_index(drop=True)
+    syn_df = syn_df[syn_df[config.get("syn_post_col", None)] != 0].reset_index(
+        drop=True
+    )
 
     zeroot_num = len(syn_df)
 
@@ -383,7 +431,12 @@ def getSyn(
 
 
 def getSynNoCache(
-    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+    pre_root=0,
+    post_root=0,
+    cleft_thresh=0.0,
+    datastack_name=None,
+    server_address=None,
+    config={},
 ):
     """Create an uncached table of synapses for a given root id.
 
@@ -391,6 +444,7 @@ def getSynNoCache(
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
+    config -- dictionary of config settings (default {})
     """
 
     # sets client #
@@ -398,7 +452,7 @@ def getSynNoCache(
 
     # gets current materialization version #
     mat_vers = max(client.materialize.get_versions())
-
+    ##################STOPPED HERE###################
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
         syn_df = client.materialize.join_query(
