@@ -36,7 +36,7 @@ def register_callbacks(app, config=None):
         n_clicks -- tracks clicks for submit button
         query_id -- root id of queried neuron as int
         cleft_thresh -- float value of cleft score threshold
-        timestamp -- str format unix utc timestamp
+        timestamp -- str format utc timestamp
         """
 
         # sets start time #
@@ -481,7 +481,7 @@ def register_callbacks(app, config=None):
         up_data -- dataframe of incoming table data
         down_data -- dataframe of outgoing table data
         cleft_thresh -- float value of cleft threshold field
-        timestamp -- str format unix utc timestamp
+        timestamp -- str format utc timestamp
         """
 
         # gets id of queried neuron from table #
@@ -614,7 +614,7 @@ def register_callbacks(app, config=None):
         sum_data -- dataframe of summary table data
         in_data -- dataframe of incoming table data
         out_data -- dataframe of outgoing table data
-        timestamp -- str format unix utc timestamp
+        timestamp -- str format utc timestamp
         """
 
         # generates root list using table data and selected rows #
@@ -660,7 +660,7 @@ def register_callbacks(app, config=None):
         sum_data -- dataframe of summary table data
         in_data -- dataframe of incoming table data
         out_data -- dataframe of outgoing table data
-        timestamp -- str format unix utc timestamp
+        timestamp -- str format utc timestamp
         """
 
         # generates root list using table data and selected rows #
