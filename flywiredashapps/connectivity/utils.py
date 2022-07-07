@@ -7,6 +7,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import json
+import datetime
+import calendar
 import time
 from nglui.statebuilder import *
 from ..common import lookup_utilities
@@ -464,6 +466,14 @@ def getSynNoCache(
         output_message = "!Query capped at 200K entires!\n" + output_message
 
     return [syn_df, output_message]
+
+
+def getTime():
+    return datetime.datetime.utcnow()
+
+
+def getUnixTime():
+    return calendar.timegm(getTime().utctimetuple())
 
 
 def idConvert(id_val, config):
@@ -967,3 +977,7 @@ def rootsToNucCoords(roots, config={}):
     )
 
     return nuc_coords_df
+
+
+def timestampToUnix(stamp):
+    return calendar.timegm(stamp.utctimetuple())

@@ -3,6 +3,8 @@ from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
 import flask
+import datetime
+from .utils import getUnixTime
 from ..common.dash_url_helper import create_component_kwargs, State
 
 title = "Fly Connectivity Viewer"
@@ -95,6 +97,38 @@ def page_layout(state={}):
                             style={
                                 "display": "inline-block",
                                 "width": "65px",
+                                "vertical-align": "top",
+                            },
+                        )
+                    ),
+                ],
+                style={"margin-left": "5px", "margin-top": "5px",},
+            ),
+            html.Div(
+                children=[
+                    # defines input message #
+                    dcc.Textarea(
+                        id="timestamp_message_text",
+                        value="Timestamp as Unix UTC (default now):",
+                        style={
+                            "width": "300px",
+                            "resize": "none",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                        rows=1,
+                        disabled=True,
+                    ),
+                    # defines input field #
+                    dcc.Input(
+                        **create_component_kwargs(
+                            state,
+                            id_inner="timestamp_field",
+                            type="text",
+                            placeholder=getUnixTime(),
+                            style={
+                                "display": "inline-block",
+                                "width": "120px",
                                 "vertical-align": "top",
                             },
                         )
