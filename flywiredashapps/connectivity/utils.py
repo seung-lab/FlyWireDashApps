@@ -11,11 +11,19 @@ import datetime
 import calendar
 import time
 from nglui.statebuilder import *
+from pytz import NonExistentTimeError
 from ..common import lookup_utilities
 
 
 def buildLink(
-    query_id, up_ids, down_ids, cleft_thresh, nucleus, cb=False, config={},
+    query_id,
+    up_ids,
+    down_ids,
+    cleft_thresh,
+    nucleus,
+    cb=False,
+    config={},
+    timestamp=None,
 ):
     """Generate NG link.
 
@@ -188,7 +196,7 @@ def buildLink(
     return url
 
 
-def checkFreshness(root_id, config={}):
+def checkFreshness(root_id, config={}, timestamp=None):
     """Check to see if root id is outdated.
     
     Keyword arguments:
@@ -205,7 +213,7 @@ def checkFreshness(root_id, config={}):
     return client.chunkedgraph.is_latest_roots(root_id)
 
 
-def coordsToRoot(coords, config={}):
+def coordsToRoot(coords, config={}, timestamp=None):
     """Convert coordinates in 4,4,40 nm resolution to root id.
 
     Keyword arguments:
@@ -246,7 +254,7 @@ def coordsToRoot(coords, config={}):
     return root_result
 
 
-def getNuc(root_id, config={}):
+def getNuc(root_id, config={}, timestamp=None):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
@@ -297,7 +305,12 @@ def getNuc(root_id, config={}):
 
 @lru_cache(maxsize=None)
 def getSyn(
-    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+    pre_root=0,
+    post_root=0,
+    cleft_thresh=0.0,
+    datastack_name=None,
+    server_address=None,
+    timestamp=None,
 ):
     """Create a cached table of synapses for a given root id.
 
@@ -385,7 +398,12 @@ def getSyn(
 
 
 def getSynNoCache(
-    pre_root=0, post_root=0, cleft_thresh=0.0, datastack_name=None, server_address=None
+    pre_root=0,
+    post_root=0,
+    cleft_thresh=0.0,
+    datastack_name=None,
+    server_address=None,
+    timestamp=None,
 ):
     """Create an uncached table of synapses for a given root id.
 
@@ -476,7 +494,7 @@ def getUnixTime():
     return calendar.timegm(getTime().utctimetuple())
 
 
-def idConvert(id_val, config):
+def idConvert(id_val, config, timestamp=None):
     """Identify id type and convert to root if necessary. Return 0 on bad id.
 
     Keyword arguments:
@@ -486,7 +504,7 @@ def idConvert(id_val, config):
     # converts coordinates or list-format input into non-listed int
     if type(id_val) == list:
         if len(id_val) == 3:
-            id_val = coordsToRoot(id_val, config=config)
+            id_val = coordsToRoot(id_val, config=config, timestamp=timestamp)
         else:
             id_val = int(id_val[0])
 
@@ -495,7 +513,7 @@ def idConvert(id_val, config):
 
     # converts nucleus id to root id #
     if len(str(id_val)) == 7:
-        id_val = nucToRoot(id_val, config=config)
+        id_val = nucToRoot(id_val, config=config, timestamp=timestamp)
 
     if len(str(id_val)) == 18:
         return id_val
@@ -503,7 +521,9 @@ def idConvert(id_val, config):
         return 0
 
 
-def makePartnerDataFrame(root_id, cleft_thresh, upstream=False, config={}):
+def makePartnerDataFrame(
+    root_id, cleft_thresh, upstream=False, config={}, timestamp=None
+):
     """Make dataframe with summary info.
 
     Keyword arguments:
@@ -582,7 +602,7 @@ def makePartnerDataFrame(root_id, cleft_thresh, upstream=False, config={}):
     return partner_df.astype(str)
 
 
-def makePie(root_id, cleft_thresh, incoming=False, config={}):
+def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     """Create pie chart of relative synapse neuropils.
 
     Keyword arguments:
@@ -750,7 +770,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}):
     return region_pie
 
 
-def makeSummaryDataFrame(root_id, cleft_thresh, config={}):
+def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
     """Make dataframe with summary info.
 
     Keyword arguments:
@@ -829,7 +849,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}):
     return [full_sum_df, output_message]
 
 
-def makeViolin(root_id, cleft_thresh, incoming=False, config={}):
+def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     """Build violin plots of up- and downstream neurotransmitter values.
 
     Keyword arguments:
@@ -900,7 +920,7 @@ def nmToNG(coords):
     return coords
 
 
-def nucToRoot(nuc_id, config={}):
+def nucToRoot(nuc_id, config={}, timestamp=None):
     """Convert nucleus id to root id.
 
     Keyword arguments:
@@ -922,7 +942,7 @@ def nucToRoot(nuc_id, config={}):
     return root_id
 
 
-def portUrl(input_ids, app_choice, config={}):
+def portUrl(input_ids, app_choice, config={}, timestamp=None):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
@@ -946,7 +966,7 @@ def portUrl(input_ids, app_choice, config={}):
     return out_url
 
 
-def rootsToNucCoords(roots, config={}):
+def rootsToNucCoords(roots, config={}, timestamp=None):
     """Convert list of root ids to one-column df of nucleus coordinates.
     
     Keyword Arguments:

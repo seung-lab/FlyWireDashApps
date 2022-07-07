@@ -27,14 +27,16 @@ def register_callbacks(app, config=None):
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
-    def update_output(n_clicks, query_id, cleft_thresh):
+    def update_output(n_clicks, query_id, cleft_thresh, timestamp):
         """Create summary and partner tables with violin plots for queried root id.
 
         Keyword arguments:
         n_clicks -- tracks clicks for submit button
         query_id -- root id of queried neuron as int
         cleft_thresh -- float value of cleft score threshold
+        timestamp -- str format unix utc timestamp
         """
 
         # sets start time #
@@ -90,7 +92,7 @@ def register_callbacks(app, config=None):
         # handles bad IDs if idConvert fails #
         try:
             # converts id input to root id #
-            root_id = idConvert(query_id, config=config)
+            root_id = idConvert(query_id, config=config, timestamp=timestamp)
         except:
             return [
                 no_update,
@@ -111,7 +113,7 @@ def register_callbacks(app, config=None):
 
         # handles bad return from freshness checker #
         try:
-            fresh = checkFreshness(root_id, config=config)
+            fresh = checkFreshness(root_id, config=config, timestamp=timestamp)
         except:
             return [
                 no_update,
@@ -173,7 +175,9 @@ def register_callbacks(app, config=None):
             pass
 
         # builds dataframes and graphs #
-        sum_list = makeSummaryDataFrame(root_id, cleft_thresh, config=config)
+        sum_list = makeSummaryDataFrame(
+            root_id, cleft_thresh, config=config, timestamp=timestamp
+        )
         sum_df = sum_list[0]
 
         # clunky but necessary handling for bad ids that make it through all previous filters #
@@ -199,15 +203,23 @@ def register_callbacks(app, config=None):
             pass
 
         up_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=True, config=config
+            root_id, cleft_thresh, upstream=True, config=config, timestamp=timestamp
         )
         down_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=False, config=config
+            root_id, cleft_thresh, upstream=False, config=config, timestamp=timestamp
         )
-        up_violin = makeViolin(root_id, cleft_thresh, incoming=True, config=config)
-        down_violin = makeViolin(root_id, cleft_thresh, incoming=False, config=config)
-        up_pie = makePie(root_id, cleft_thresh, incoming=True, config=config)
-        down_pie = makePie(root_id, cleft_thresh, incoming=False, config=config)
+        up_violin = makeViolin(
+            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+        )
+        down_violin = makeViolin(
+            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+        )
+        up_pie = makePie(
+            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+        )
+        down_pie = makePie(
+            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+        )
 
         # assigns df values to 'cols' and 'data' for passing to dash table #
         sum_cols = [{"name": i, "id": i,} for i in sum_df.columns]
@@ -454,9 +466,12 @@ def register_callbacks(app, config=None):
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makeLink(up_rows, down_rows, query_data, up_data, down_data, cleft_thresh):
+    def makeLink(
+        up_rows, down_rows, query_data, up_data, down_data, cleft_thresh, timestamp
+    ):
         """Create neuroglancer link using selected partners.
 
         Keyword arguments:
@@ -466,6 +481,7 @@ def register_callbacks(app, config=None):
         up_data -- dataframe of incoming table data
         down_data -- dataframe of outgoing table data
         cleft_thresh -- float value of cleft threshold field
+        timestamp -- str format unix utc timestamp
         """
 
         # gets id of queried neuron from table #
@@ -484,7 +500,13 @@ def register_callbacks(app, config=None):
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
         out_url = buildLink(
-            query_out, up_out, down_out, cleft_thresh, nuc, config=config
+            query_out,
+            up_out,
+            down_out,
+            cleft_thresh,
+            nuc,
+            config=config,
+            timestamp=timestamp,
         )
 
         return [out_url, ""]
@@ -580,9 +602,10 @@ def register_callbacks(app, config=None):
         State("summary_table", "data",),
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makePartLink(in_rows, out_rows, sum_data, in_data, out_data):
+    def makePartLink(in_rows, out_rows, sum_data, in_data, out_data, timestamp):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
@@ -591,6 +614,7 @@ def register_callbacks(app, config=None):
         sum_data -- dataframe of summary table data
         in_data -- dataframe of incoming table data
         out_data -- dataframe of outgoing table data
+        timestamp -- str format unix utc timestamp
         """
 
         # generates root list using table data and selected rows #
@@ -609,7 +633,7 @@ def register_callbacks(app, config=None):
         elif len(full_list) > 2:
             return ["", "Select only 1-2 neurons to port to Partner App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "partner", config)
+        out_url = portUrl(str(full_list)[1:-1], "partner", config, timestamp=timestamp)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
@@ -624,9 +648,10 @@ def register_callbacks(app, config=None):
         State("summary_table", "data",),
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makeSumLink(in_rows, out_rows, sum_data, in_data, out_data):
+    def makeSumLink(in_rows, out_rows, sum_data, in_data, out_data, timestamp):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
@@ -635,6 +660,7 @@ def register_callbacks(app, config=None):
         sum_data -- dataframe of summary table data
         in_data -- dataframe of incoming table data
         out_data -- dataframe of outgoing table data
+        timestamp -- str format unix utc timestamp
         """
 
         # generates root list using table data and selected rows #
@@ -647,7 +673,7 @@ def register_callbacks(app, config=None):
         if len(full_list) > 20:
             return ["", "Select 20 or fewer neurons to port to Summary App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "summary", config)
+        out_url = portUrl(str(full_list)[1:-1], "summary", config, timestamp=timestamp)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]
