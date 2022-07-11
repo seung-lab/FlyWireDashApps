@@ -106,7 +106,7 @@ def page_layout(state={}):
             ),
             html.Div(
                 children=[
-                    # defines input message #
+                    # defines timestamp input message #
                     dcc.Textarea(
                         id="timestamp_message_text",
                         value="Timestamp as datetime or Unix UTC (default now):",
@@ -119,7 +119,7 @@ def page_layout(state={}):
                         rows=1,
                         disabled=True,
                     ),
-                    # defines input field #
+                    # defines timestamp input field #
                     dcc.Input(
                         **create_component_kwargs(
                             state,

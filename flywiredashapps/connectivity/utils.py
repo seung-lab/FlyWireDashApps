@@ -54,7 +54,7 @@ def buildLink(
     color_list = [query_color] + up_cols + down_cols
 
     # builds nuc coords df using root id list #
-    nuc_coords_df = rootsToNucCoords(id_list, config, timestamp=timestamp)
+    nuc_coords_df = rootsToNucCoords(id_list, config, timestamp=timestamp,)
 
     # sets client using flywire production datastack #
     client = lookup_utilities.make_client(
@@ -210,11 +210,11 @@ def checkFreshness(root_id, config={}, timestamp=None):
 
     # sets client #
     client = lookup_utilities.make_client(
-        config.get("datastack", None), config.get("server_address", None)
+        config.get("datastack", None), config.get("server_address", None),
     )
 
     # returns True if root id is current, False if not #
-    return client.chunkedgraph.is_latest_roots(root_id)
+    return client.chunkedgraph.is_latest_roots(root_id, timestamp=timestamp,)
 
 
 def coordsToRoot(coords, config={}, timestamp=None):
@@ -253,7 +253,9 @@ def coordsToRoot(coords, config={}, timestamp=None):
     point = int(cv.download_point(cv_xyz, size=1,))
 
     # looks up sv's associated root id, converts to string #
-    root_result = str(client.chunkedgraph.get_root_id(supervoxel_id=point))
+    root_result = str(
+        client.chunkedgraph.get_root_id(supervoxel_id=point, timestamp=timestamp,)
+    )
 
     return root_result
 
@@ -271,8 +273,8 @@ def getNuc(root_id, config={}, timestamp=None):
         config.get("datastack", None), config.get("server_address", None)
     )
 
-    # gets current materialization version #
-    mat_vers = max(client.materialize.get_versions())
+    # # gets current materialization version #
+    # mat_vers = max(client.materialize.get_versions())
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
@@ -328,8 +330,8 @@ def getSyn(
     # sets client #
     client = lookup_utilities.make_client(datastack_name, server_address)
 
-    # gets current materialization version #
-    mat_vers = max(client.materialize.get_versions())
+    # # gets current materialization version #
+    # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -424,8 +426,8 @@ def getSynNoCache(
     # sets client #
     client = lookup_utilities.make_client(datastack_name, server_address)
 
-    # gets current materialization version #
-    mat_vers = max(client.materialize.get_versions())
+    # # gets current materialization version #
+    # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -635,6 +637,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         title_name = "Incoming Synapse Neuropils"
     elif incoming == False:
@@ -644,6 +647,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         title_name = "Outgoing Synapse Neuropils"
 
@@ -801,6 +805,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
         cleft_thresh=cleft_thresh,
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
+        timestamp=timestamp,
     )
     down_query = getSyn(
         pre_root=root_id,
@@ -808,10 +813,11 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
         cleft_thresh=cleft_thresh,
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
+        timestamp=timestamp,
     )
 
     # makes df of query nucleus, upstream and downstream synapses #
-    nuc_df = getNuc(root_id, config=config)
+    nuc_df = getNuc(root_id, config=config, timestamp=timestamp,)
     up_df = up_query[0]
     down_df = down_query[0]
 
@@ -882,6 +888,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         title_name = "Outgoing Synapse NT Scores"
     elif incoming == True:
@@ -891,6 +898,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         title_name = "Incoming Synapse NT Scores"
 
@@ -946,7 +954,7 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
         config.get("datastack", None), config.get("server_address", None)
     )
 
-    mat_vers = max(client.materialize.get_versions())
+    # mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
         filter_in_dict={"id": [nuc_id]},
@@ -997,7 +1005,7 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     )
 
     # gets current materialization version #
-    mat_vers = max(client.materialize.get_versions())
+    # mat_vers = max(client.materialize.get_versions())
 
     # drops 0-roots #
     roots = [x for x in roots if x != 0]
