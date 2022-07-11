@@ -1,5 +1,7 @@
 from ..common import lookup_utilities
 import time
+import datetime
+import calendar
 import json
 import cloudvolume
 import pandas as pd
@@ -78,7 +80,7 @@ def colorPick(num_of_segs):
     return colors
 
 
-def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
+def buildSummaryLink(root_list, nuc_dict, cb=False, config={}, timestamp=None):
     """Generate NG link.
     
     Keyword arguments:
@@ -86,6 +88,7 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
     nuc_list -- list of listed ints for x,y,z coords of nuclei in 4,4,40 nm resolution
     cb -- currently unused bool option for colorblind-friendliness (default False)
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # generates list of hex colors for segments #
@@ -138,12 +141,13 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
     return url
 
 
-def checkFreshness(root_id, config={}):
+def checkFreshness(root_id, config={}, timestamp=None):
     """Check to see if root id is outdated.
     
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
     # sets client #
     client = lookup_utilities.make_client(
@@ -151,14 +155,15 @@ def checkFreshness(root_id, config={}):
     )
 
     # returns True if root id is current, False if not #
-    return client.chunkedgraph.is_latest_roots(root_id)
+    return client.chunkedgraph.is_latest_roots(root_id, timestamp=timestamp)
 
 
-def coordsToRoot(coords, config={}):
+def coordsToRoot(coords, config={}, timestamp=None):
     """Convert coordinates in 4,4,40 nm resolution to root id.
 
     Keyword arguments:
     coords -- list of x,y,z coordinates in 4,4,40 nm resolution
+    timestamp -- datetime format utc timestamp
     """
 
     # converts coordinates to ints #
@@ -189,17 +194,20 @@ def coordsToRoot(coords, config={}):
     point = int(cv.download_point(cv_xyz, size=1,))
 
     # looks up sv's associated root id, converts to string #
-    root_result = int(client.chunkedgraph.get_root_id(supervoxel_id=point))
+    root_result = int(
+        client.chunkedgraph.get_root_id(supervoxel_id=point, timestamp=timestamp)
+    )
 
     return root_result
 
 
-def getNuc(root_id, config={}):
+def getNuc(root_id, config={}, timestamp=None):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
     root_id -- root or nucleus id formatted as listed str
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # sets client #
@@ -208,13 +216,14 @@ def getNuc(root_id, config={}):
     )
 
     # gets current materialization version #
-    mat_vers = max(client.materialize.get_versions())
+    # mat_vers = max(client.materialize.get_versions())
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
         filter_in_dict={"pt_root_id": [root_id]},
-        materialization_version=mat_vers,
+        # materialization_version=mat_vers,
+        timestamp=timestamp,
     )
 
     # converts nucleus coordinates from n to 4x4x40 resolution #
@@ -232,7 +241,13 @@ def getNuc(root_id, config={}):
     return out_df.astype(str)
 
 
-def inputToRootList(input_str, config={}):
+def getTime():
+    """Get current time in datetime.datetime format.
+    """
+    return datetime.datetime.utcnow()
+
+
+def inputToRootList(input_str, config={}, timestamp=None):
     """Convert input string into list of int root ids.
 
     Keyword arguments:
@@ -248,10 +263,10 @@ def inputToRootList(input_str, config={}):
         root_list = [int(i) for i in input_list]
     # if ids are nucs #
     elif all([len(i) == 7 for i in input_list]):
-        root_list = [nucToRoot(int(i), config) for i in input_list]
+        root_list = [nucToRoot(int(i), config, timestamp=timestamp) for i in input_list]
     # if id is coordinates #
     elif len(input_list) % 3 == 0:
-        root_list = [coordsToRoot(input_list, config)]
+        root_list = [coordsToRoot(input_list, config, timestamp=timestamp)]
     else:
         root_list = input_list
     return root_list
@@ -270,7 +285,7 @@ def nmToNG(coords):
     return coords
 
 
-def nucToRoot(nuc_id, config={}):
+def nucToRoot(nuc_id, config={}, timestamp=None):
     """Convert nucleus id to root id.
 
     Keyword arguments:
@@ -279,15 +294,18 @@ def nucToRoot(nuc_id, config={}):
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
-    mat_vers = max(client.materialize.get_versions())
+    # mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
+        "nuclei_v1",
+        filter_in_dict={"id": [nuc_id]},
+        # materialization_version=mat_vers,
+        timestamp=timestamp,
     )
     root_id = int(nuc_df.loc[0, "pt_root_id"])
     return root_id
 
 
-def portUrl(input_ids, app_choice, config={}):
+def portUrl(input_ids, app_choice, config={}, timestamp=None):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
@@ -310,7 +328,7 @@ def portUrl(input_ids, app_choice, config={}):
     return out_url
 
 
-def rootListToDataFrame(root_list, config={}):
+def rootListToDataFrame(root_list, config={}, timestamp=None):
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
@@ -335,13 +353,22 @@ def rootListToDataFrame(root_list, config={}):
         # try to form df, otherwise default to bad id behavior #
         try:
             # sets freshness to T/F to check for outdated ids #
-            freshness = checkFreshness(i, config)
+            freshness = checkFreshness(i, config, timestamp=timestamp,)
 
             # tries to make df using changelog #
             try:
                 change_df = pd.DataFrame(
                     client.chunkedgraph.get_tabular_change_log(i)[i]
                 )
+
+                # --------------------------FILTER TESTING----------------------------#
+                print("LEN FULL:", len(change_df["timestamp"]))
+                print("LEN FILT:", len(change_df.query("timestamp > 1642407000000")))
+                print("FULL:", change_df["timestamp"])
+                print("FILT:", change_df.query("timestamp > 1642407000"))
+
+                # --------------------------FILTER TESTING----------------------------#
+
                 edits_dict = change_df["is_merge"].value_counts().to_dict()
                 if True not in edits_dict:
                     edits_dict[True] = 0
@@ -357,7 +384,7 @@ def rootListToDataFrame(root_list, config={}):
                 proofreaders = "n/a"
 
             # gets nucleus information #
-            row_df = getNuc(i, config)
+            row_df = getNuc(i, config, timestamp=timestamp)
 
             # handles segments without nuclei #
             if row_df.empty:
@@ -391,3 +418,44 @@ def rootListToDataFrame(root_list, config={}):
         output_df = pd.concat([output_df, row_df])
 
     return output_df
+
+
+def strToDatetime(string_timestamp):
+    """Convert string timestamp to dateime.datetime.
+    
+    Keyword Arguments:
+    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481 or unix UTC
+    """
+
+    # converts if unix #
+    if len(string_timestamp) == 10 and string_timestamp.isnumeric():
+        out_stamp = unixToDatetime(int(string_timestamp))
+    else:
+        # converts if datetime #
+        try:
+            out_stamp = datetime.datetime.strptime(
+                string_timestamp, "%Y-%m-%d %H:%M:%S.%f"
+            )
+        # returns None if formatting incorrect #
+        except:
+            out_stamp = None
+
+    return out_stamp
+
+
+def unixToDatetime(stamp):
+    """Convert unix format timestamp to datetime.datetime.
+    
+    Keyword Arguments:
+    stamp -- unix format timestamp
+    """
+    return datetime.datetime.fromtimestamp(stamp)
+
+
+def datetimeToUnix(stamp):
+    """Convert datetime.datetime format timestamp to unix.
+    
+    Keyword Arguments:
+    stamp -- datetime.datetime format timestamp
+    """
+    return calendar.timegm(stamp.utctimetuple())

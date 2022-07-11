@@ -16,14 +16,49 @@ def register_callbacks(app, config=None):
         Output("submit_loader", "children"),
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
-    def update_output(n_clicks, id_list):
+    def update_output(n_clicks, id_list, timestamp=None):
         """Update app based on input.
         
         Keyword arguments:
         n_clicks -- int number of times the submit button has been pressed
         id_list -- str formatted list of roots, nucs, and/or coords for input
+        timestamp -- string format datetime or unix utc timestamp
         """
+
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
+        # handles bad input (which results in a None output from strToDatetime) #
+        if timestamp == None:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                "Please enter timestamp in datetime format YYYY-MM-DD HH:MM:SS, e.g. 2022-07-11 13:25:46 or unix UTC, e.g. 1642407000",
+                2,
+                "",
+            ]
+        else:
+            pass
+
+        # handles outdated timestamps from before 2022 Jan 17 #
+        if datetimeToUnix(timestamp) < 1642407000:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                "Timestamp out of current date range, must be newer than 2022-01-17.",
+                1,
+                "",
+            ]
+        else:
+            pass
+
         if id_list != None:
 
             start_time = time.time()
@@ -153,7 +188,7 @@ def register_callbacks(app, config=None):
             ]
 
             # generates root list from input list #
-            root_list = inputToRootList(id_list, config)
+            root_list = inputToRootList(id_list, config, timestamp=timestamp,)
 
             # enforces 20-item limit on input
             if len(root_list) > 20:
@@ -169,7 +204,9 @@ def register_callbacks(app, config=None):
 
                 # removes duplicates #
                 root_set = set(root_list)
-                output_df = rootListToDataFrame(list(root_set), config)
+                output_df = rootListToDataFrame(
+                    list(root_set), config, timestamp=timestamp
+                )
 
                 # creates column list based on dataframe columns #
                 column_list = [{"name": i, "id": i} for i in output_df.columns]
@@ -217,16 +254,26 @@ def register_callbacks(app, config=None):
         Output("link_loader", "children",),
         Input("table", "selected_rows",),
         State("table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makeLink(rows, table_data, cb=False):
+    def makeLink(
+        rows, table_data, timestamp=None, cb=False,
+    ):
         """Create neuroglancer link using selected IDs.
 
         Keyword arguments:
         rows -- list of selected upstream row indices
         table_data -- dataframe of summary table data
         cb -- bool to determine colorblind option (default False)
+        timestamp -- string format datetime or unix utc timestamp
         """
+
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
 
         # generates root list using table data and selected rows #
         root_list = [table_data[x]["Root ID"] for x in rows]
@@ -259,7 +306,9 @@ def register_callbacks(app, config=None):
         }
 
         # builds url using buildSummaryLink function #
-        out_url = buildSummaryLink(root_list, nuc_dict, cb=cb, config=config)
+        out_url = buildSummaryLink(
+            root_list, nuc_dict, cb=cb, config=config, timestamp=timestamp
+        )
 
         # returns url string and empty string for loader #
         return [out_url, ""]
@@ -289,14 +338,16 @@ def register_callbacks(app, config=None):
         Output("connectivity_link_loader", "children",),
         Input("table", "selected_rows",),
         State("table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makeConnLink(rows, table_data):
+    def makeConnLink(rows, table_data, timestamp=None):
         """Create connectivity app link using selected IDs.
 
         Keyword arguments:
         rows -- list of selected upstream row indices
         table_data -- dataframe of summary table data
+        timestamp -- string format datetime or unix utc timestamp
         """
 
         # generates root list using table data and selected rows #
@@ -312,7 +363,9 @@ def register_callbacks(app, config=None):
             return ["", "Select Current, Valid Neuron to Port to Connectivity App", ""]
 
         # builds url using portUrl function #
-        out_url = portUrl(str(root_list[0]), "connectivity", config)
+        out_url = portUrl(
+            str(root_list[0]), "connectivity", config, timestamp=timestamp
+        )
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neuron to Connectivity App", ""]
@@ -324,14 +377,16 @@ def register_callbacks(app, config=None):
         Output("partner_link_loader", "children",),
         Input("table", "selected_rows",),
         State("table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makePartLink(rows, table_data):
+    def makePartLink(rows, table_data, timestamp=None):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
         rows -- list of selected upstream row indices
         table_data -- dataframe of summary table data
+        timestamp -- string format datetime or unix utc timestamp
         """
 
         # generates root list using table data and selected rows #
@@ -347,7 +402,7 @@ def register_callbacks(app, config=None):
             return ["", "Select only current, valid neurons to send to Partner App", ""]
 
         # builds url using portUrl function #
-        out_url = portUrl(str(root_list)[1:-1], "partner", config)
+        out_url = portUrl(str(root_list)[1:-1], "partner", config, timestamp=timestamp,)
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
