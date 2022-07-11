@@ -35,6 +35,7 @@ def buildLink(
     nucleus -- x,y,z coordinates of query nucleus as list of ints
     cb -- boolean option to make colorblind-friendly (default False)
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # checks for currently unused colorblind option, sets color #
@@ -206,6 +207,7 @@ def checkFreshness(root_id, config={}, timestamp=None):
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # sets client #
@@ -223,6 +225,7 @@ def coordsToRoot(coords, config={}, timestamp=None):
     Keyword arguments:
     coords -- list of x,y,z coordinates in 4,4,40 nm resolution
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # converts coordinates to ints #
@@ -266,6 +269,7 @@ def getNuc(root_id, config={}, timestamp=None):
     Keyword arguments:
     root_id -- root or nucleus id formatted as int
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # sets client #
@@ -325,6 +329,9 @@ def getSyn(
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
+    datastack_name -- string name of datastack
+    server_address -- string format server address
+    timestamp -- datetime format utc timestamp
     """
 
     # sets client #
@@ -421,6 +428,9 @@ def getSynNoCache(
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
+    datastack_name -- string name of datastack
+    server_address -- string format server address
+    timestamp -- datetime format utc timestamp
     """
 
     # sets client #
@@ -517,6 +527,7 @@ def idConvert(id_val, config, timestamp=None):
     Keyword arguments:
     id -- root id, nuc id, or xyz coords
     config -- dictionary of config settings
+    timestamp -- datetime format utc timestamp
     """
     # converts coordinates or list-format input into non-listed int
     if type(id_val) == list:
@@ -548,6 +559,7 @@ def makePartnerDataFrame(
     cleft_thresh -- float-format cleft score threshold
     upstream -- Boolean that determines whether df is upstream or downstream (default False)
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # makes df of queried neuron synapses #
@@ -627,6 +639,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     cleft_thresh -- float-format cleft score threshold to drop synapses
     incoming -- boolean to specify incoming or outgoing synapses (default False)
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # sets variable for incoming or outgoing synapses
@@ -796,6 +809,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
     root_id -- 18-digit int-format root id number
     cleft_thresh -- float-format cleft score threshold
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # runs up and downstream queries and returns list with [df,message] #
@@ -878,6 +892,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
     cleft_thresh -- float-format cleft score threshold to drop synapses
     incoming -- boolean to specify incoming or outgoing synapses (default False)
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     # sets variable for incoming or outgoing synapses
@@ -949,6 +964,7 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
     Keyword arguments:
     nuc_id -- 7-digit nucleus id as int
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
@@ -975,6 +991,7 @@ def portUrl(input_ids, app_choice, config={}, timestamp=None):
     input_ids -- string of selected 18-digit root ids separated by commas
     app choice -- string choice of which app to send the inputs to
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
 
     if app_choice == "summary":
@@ -998,6 +1015,7 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     Keyword Arguments:
     roots -- list of int-format root ids
     config -- dictionary of config settings (default {})
+    timestamp -- datetime format utc timestamp
     """
     # sets client #
     client = lookup_utilities.make_client(
