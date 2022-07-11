@@ -109,7 +109,7 @@ def page_layout(state={}):
                     # defines input message #
                     dcc.Textarea(
                         id="timestamp_message_text",
-                        value="Timestamp as Unix UTC (default now):",
+                        value="Timestamp as datetime or Unix UTC (default now):",
                         style={
                             "width": "300px",
                             "resize": "none",

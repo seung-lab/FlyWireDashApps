@@ -36,7 +36,7 @@ def register_callbacks(app, config=None):
         n_clicks -- tracks clicks for submit button
         query_id -- root id of queried neuron as int
         cleft_thresh -- float value of cleft score threshold
-        timestamp -- str format utc timestamp
+        timestamp -- str format utc timestamp as datetime or unix
         """
 
         # sets start time #
@@ -45,6 +45,54 @@ def register_callbacks(app, config=None):
         # handles blank id submission #
         if query_id == None:
             raise PreventUpdate
+        else:
+            pass
+
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
+        # handles bad input (which results in a None output from strToDatetime) #
+        if timestamp == None:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                "Please enter timestamp in datetime format YYYY-MM-DD HH:MM:SS, e.g. 2022-07-11 13:25:46 or unix UTC, e.g. 1642407000",
+                2,
+                "",
+            ]
+        else:
+            pass
+
+        # handles outdated timestamps from before 2022 Jan 17 #
+        if datetimeToUnix(timestamp) < 1642407000:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                "Timestamp out of current date range, must be newer than 2022-01-17.",
+                1,
+                "",
+            ]
         else:
             pass
 
@@ -484,6 +532,12 @@ def register_callbacks(app, config=None):
         timestamp -- str format utc timestamp
         """
 
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
         # gets id of queried neuron from table #
         query_out = [query_data[0]["Root ID"]]
 
@@ -617,6 +671,12 @@ def register_callbacks(app, config=None):
         timestamp -- str format utc timestamp
         """
 
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
         # generates root list using table data and selected rows #
         in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
         out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
@@ -663,6 +723,12 @@ def register_callbacks(app, config=None):
         timestamp -- str format utc timestamp
         """
 
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
         # generates root list using table data and selected rows #
         in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
         out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
@@ -677,6 +743,31 @@ def register_callbacks(app, config=None):
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]
+
+    # # CURRENTLY UNUSED defines callback that converts datetime timestamp input to unix #
+    # @app.callback(
+    #     Output({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+    #     Input({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+    #     prevent_initial_call=True,
+    # )
+    # def makeSumLink(timestamp):
+    #     """Convert datetime timestamp to unix for url feeding.
+
+    #     Keyword arguments:
+    #     timestamp -- str format utc timestamp
+    #     """
+
+    #     dt = strToDatetime(timestamp)
+
+    #     # doesn't update on bad input #
+    #     if dt == None:
+    #         return no_update
+    #     # doesn't update on unix input #
+    #     elif len(timestamp) == 10 and timestamp.isnumeric():
+    #         return no_update
+    #     # updates on datetime input #
+    #     else:
+    #         return datetimeToUnix(dt)
 
     pass
 

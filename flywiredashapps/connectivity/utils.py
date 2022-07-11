@@ -278,7 +278,8 @@ def getNuc(root_id, config={}, timestamp=None):
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
         filter_in_dict={"pt_root_id": [root_id]},
-        materialization_version=mat_vers,
+        # materialization_version=mat_vers,
+        timestamp=timestamp,
     )
 
     # handles roots with multiple nuclei #
@@ -336,7 +337,8 @@ def getSyn(
             [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
             filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -344,7 +346,8 @@ def getSyn(
             [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
             filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
     else:
         # creates df that includes neuropil regions using root id #
@@ -357,7 +360,8 @@ def getSyn(
                 }
             },
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
 
     # # converts cleft scores from str to int #
@@ -429,7 +433,8 @@ def getSynNoCache(
             [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
             filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -437,7 +442,8 @@ def getSynNoCache(
             [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
             filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
     else:
         # creates df that includes neuropil regions using root id #
@@ -450,7 +456,8 @@ def getSynNoCache(
                 }
             },
             suffixes=["syn", "nuc"],
-            materialization_version=mat_vers,
+            # materialization_version=mat_vers,
+            timestamp=timestamp,
         )
 
     raw_num = len(syn_df)
@@ -941,7 +948,10 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
 
     mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
+        "nuclei_v1",
+        filter_in_dict={"id": [nuc_id]},
+        # materialization_version=mat_vers,
+        timestamp=timestamp,
     )
     try:
         root_id = int(nuc_df.loc[0, "pt_root_id"])
@@ -996,7 +1006,8 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
         filter_in_dict={"pt_root_id": roots},
-        materialization_version=mat_vers,
+        # materialization_version=mat_vers,
+        timestamp=timestamp,
     )
 
     # converts nucleus coordinates from nm to 4x4x40 resolution #
@@ -1007,16 +1018,39 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     return nuc_coords_df
 
 
-def strToTime(string_timestamp):
+def strToDatetime(string_timestamp):
     """Convert string timestamp to dateime.datetime.
     
     Keyword Arguments:
-    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481
+    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481 or unix UTC
     """
-    datetime.datetime.strptime(string_timestamp, "%Y-%m-%d %H:%M:%S.%f")
+
+    # converts if unix #
+    if len(string_timestamp) == 10 and string_timestamp.isnumeric():
+        out_stamp = unixToDatetime(int(string_timestamp))
+    else:
+        # converts if datetime #
+        try:
+            out_stamp = datetime.datetime.strptime(
+                string_timestamp, "%Y-%m-%d %H:%M:%S.%f"
+            )
+        # returns None if formatting incorrect #
+        except:
+            out_stamp = None
+
+    return out_stamp
 
 
-def timestampToUnix(stamp):
+def unixToDatetime(stamp):
+    """Convert unix format timestamp to datetime.datetime.
+    
+    Keyword Arguments:
+    stamp -- unix format timestamp
+    """
+    return datetime.datetime.fromtimestamp(stamp)
+
+
+def datetimeToUnix(stamp):
     """Convert datetime.datetime format timestamp to unix.
     
     Keyword Arguments:
