@@ -1176,7 +1176,7 @@ def strToDatetime(string_timestamp):
     """Convert string timestamp to dateime.datetime.
     
     Keyword Arguments:
-    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481 or unix UTC
+    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC
     """
 
     # converts if unix #
