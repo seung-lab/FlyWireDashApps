@@ -342,35 +342,98 @@ def getSyn(
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"pre_pt_root_id": [pre_root]},
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"post_pt_root_id": [post_root]},
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
     else:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={
+        #         "synapses_nt_v1": {
+        #             "pre_pt_root_id": [pre_root],
+        #             "post_pt_root_id": [post_root],
+        #         }
+        #     },
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
             filter_in_dict={
-                "synapses_nt_v1": {
-                    "pre_pt_root_id": [pre_root],
-                    "post_pt_root_id": [post_root],
-                }
+                "pre_pt_root_id": [pre_root],
+                "post_pt_root_id": [post_root],
             },
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
 
     # # converts cleft scores from str to int #
@@ -441,35 +504,98 @@ def getSynNoCache(
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"pre_pt_root_id": [pre_root]},
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-            filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"post_pt_root_id": [post_root]},
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
     else:
         # creates df that includes neuropil regions using root id #
-        syn_df = client.materialize.join_query(
-            [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        # syn_df = client.materialize.join_query(
+        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
+        #     filter_in_dict={
+        #         "synapses_nt_v1": {
+        #             "pre_pt_root_id": [pre_root],
+        #             "post_pt_root_id": [post_root],
+        #         }
+        #     },
+        #     suffixes=["syn", "nuc"],
+        #     # materialization_version=mat_vers,
+        #     timestamp=timestamp,
+        # )
+        raw_syn_df = client.materialize.query_table(
+            "synapses_nt_v1",
             filter_in_dict={
-                "synapses_nt_v1": {
-                    "pre_pt_root_id": [pre_root],
-                    "post_pt_root_id": [post_root],
-                }
+                "pre_pt_root_id": [int(pre_root)],
+                "post_pt_root_id": [int(post_root)],
             },
-            suffixes=["syn", "nuc"],
-            # materialization_version=mat_vers,
             timestamp=timestamp,
+        )
+        np_df = client.materialize.query_table(
+            "fly_synapses_neuropil",
+            # filters using array of syn ids from raw_syn_df #
+            filter_in_dict={"id": np.array(raw_syn_df["id"])},
+            timestamp=timestamp,
+            merge_reference=False,
+        )
+        syn_df = pd.merge(
+            raw_syn_df,
+            np_df,
+            left_on="id",
+            right_on="target_id",
+            how="inner",
+            suffixes=["syn", "np"],
         )
 
     raw_num = len(syn_df)
@@ -670,8 +796,8 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     ratios_df = query_df.groupby(["neuropil"], as_index=False).count()
 
     # drops all nonessential columns and renames those that remain #
-    ratios_df = ratios_df.filter(["neuropil", "id_syn"], axis=1)
-    ratios_df = ratios_df.rename({"neuropil": "Neuropil", "id_syn": "Ratio"}, axis=1)
+    ratios_df = ratios_df.filter(["neuropil", "idsyn"], axis=1)
+    ratios_df = ratios_df.rename({"neuropil": "Neuropil", "idsyn": "Ratio"}, axis=1)
 
     # divides all counts by total number of synapses to get ratios #
     ratios_df["Ratio"] = ratios_df["Ratio"] / num_syn
@@ -1026,7 +1152,9 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     # mat_vers = max(client.materialize.get_versions())
 
     # drops 0-roots #
-    roots = [x for x in roots if x != 0]
+    roots = [int(x) for x in roots if int(x) != 0]
+
+    print("ROOTS:", roots)
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
@@ -1058,11 +1186,20 @@ def strToDatetime(string_timestamp):
         # converts if datetime #
         try:
             out_stamp = datetime.datetime.strptime(
-                string_timestamp, "%Y-%m-%d %H:%M:%S.%f"
+                string_timestamp, "%Y-%m-%d %H:%M:%S"
             )
-        # returns None if formatting incorrect #
+        # corrects for removal of space by url helper #
         except:
-            out_stamp = None
+            try:
+                print(string_timestamp)
+                string_timestamp = string_timestamp[0:10] + " " + string_timestamp[10:]
+                print(string_timestamp)
+                out_stamp = datetime.datetime.strptime(
+                    string_timestamp, "%Y-%m-%d %H:%M:%S"
+                )
+            # returns None if formatting still incorrect #
+            except:
+                out_stamp = None
 
     return out_stamp
 

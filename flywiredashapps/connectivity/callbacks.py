@@ -49,7 +49,7 @@ def register_callbacks(app, config=None):
             pass
 
         # sets timestamp to current time if no input or converts string input to datetime #
-        if timestamp == None:
+        if timestamp == None or timestamp == "":
             timestamp = getTime()
         else:
             timestamp = strToDatetime(timestamp)
