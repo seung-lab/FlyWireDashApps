@@ -43,7 +43,7 @@ def register_callbacks(app, config=None):
             pass
 
         # sets timestamp to current time if no input or converts string input to datetime #
-        if timestamp == None:
+        if timestamp == None or timestamp == "":
             timestamp = getTime()
         else:
             timestamp = strToDatetime(timestamp)
@@ -402,7 +402,6 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_a"}, "value",),
         State({"type": "url_helper", "id_inner": "input_b"}, "value",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value",),
-        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State("table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
