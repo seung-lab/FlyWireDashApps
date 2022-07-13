@@ -8,9 +8,128 @@ import json
 import datetime
 import calendar
 import time
+import datetime
 from nglui.statebuilder import *
 from pytz import NonExistentTimeError
 from ..common import lookup_utilities
+
+
+def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
+    """Generate NG link.
+
+    Keyword arguments:
+    query_id -- single queried root id as list of str
+    cleft_thresh -- cleft score threshold to drop synapses as float
+    nucleus -- x,y,z coordinates of query nucleus as list of ints
+    config -- dictionary of config settings (default {})
+    """
+
+    if timestamp == None:
+        timestamp == datetime.datetime.utcnow()
+
+    # sets client using flywire production datastack #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # sets configuration for EM layer #
+    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+
+    # sets configuration for segmentation layer #
+    seg = SegmentationLayerConfig(
+        name="Production-segmentation_with_graph",
+        source=client.info.segmentation_source(),
+        fixed_ids=query_id,
+        fixed_id_colors=["#00ffff"],  # cyan #
+        view_kws={"alpha_3d": 0.8},
+    )
+
+    # builds nuc coords df using root id list #
+    nuc_coords_df = rootsToNucCoords(query_id, config)
+
+    # makes dfs of all synapses for query neuron #
+    up_syns_df = client.materialize.query_table(
+        "synapses_nt_v1",
+        filter_in_dict={"post_pt_root_id": query_id},
+        timestamp=timestamp,
+    )
+    down_syns_df = client.materialize.query_table(
+        "synapses_nt_v1",
+        filter_in_dict={"pre_pt_root_id": query_id},
+        timestamp=timestamp,
+    )
+
+    if len(up_syns_df) > 0:
+        # makes truncated df of pre & post coords #
+        up_coords_df = pd.DataFrame(
+            {
+                "pre": [nmToNG(x) for x in up_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x) for x in up_syns_df["post_pt_position"]],
+            }
+        )
+    else:
+        up_coords_df = pd.DataFrame()
+    if len(down_syns_df) > 0:
+        # makes truncated df of pre & post coords #
+        down_coords_df = pd.DataFrame(
+            {
+                "pre": [nmToNG(x) for x in down_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x) for x in down_syns_df["post_pt_position"]],
+            }
+        )
+    else:
+        down_coords_df = pd.DataFrame()
+
+    # defines configuration for point & line annotations #
+    points = PointMapper(point_column="pt_position")
+    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+
+    # defines configuration for annotation layers #
+    up_anno = AnnotationLayerConfig(
+        name="Incoming Synapses", color="#FF8800", mapping_rules=lines,
+    )
+    down_anno = AnnotationLayerConfig(
+        name="Outgoing Synapses", color="#8800FF", mapping_rules=lines,
+    )
+    nuc_anno = AnnotationLayerConfig(
+        name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
+    )
+
+    # sets view to nucelus of query cell #
+    # defaults to center of dataset if no input #
+    try:
+        view_options = {
+            "position": [int(x) for x in nucleus],
+            "zoom_3d": 2000,
+        }
+    except:
+        view_options = {
+            "position": [119412, 62016, 3539,],
+            "zoom_3d": 10000,
+        }
+
+    # defines 'sb' by passing in rules for img, seg, and anno layers #
+    up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
+    down_sb = StateBuilder([down_anno])
+    nuc_sb = StateBuilder([nuc_anno])
+    chained_sb = ChainedStateBuilder([up_sb, down_sb, nuc_sb])
+
+    # render_state into non-dumped version using json.loads() #
+    state_json = json.loads(
+        chained_sb.render_state(
+            [up_coords_df, down_coords_df, nuc_coords_df], return_as="json",
+        )
+    )
+
+    # feeds state_json into state uploader to set the value of 'new_id' #
+    new_id = client.state.upload_state_json(state_json)
+
+    # defines url using builder, passing in the new_id and the ngl url #
+    url = client.state.build_neuroglancer_url(
+        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+    )
+
+    return url
 
 
 def buildLink(
