@@ -26,6 +26,8 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
 
     if timestamp == None:
         timestamp == datetime.datetime.utcnow()
+    else:
+        timestamp = strToDatetime(timestamp)
 
     # sets client using flywire production datastack #
     client = lookup_utilities.make_client(
@@ -46,6 +48,8 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
 
     # builds nuc coords df using root id list #
     nuc_coords_df = rootsToNucCoords(query_id, config)
+
+    query_id = [int(x) for x in query_id]
 
     # makes dfs of all synapses for query neuron #
     up_syns_df = client.materialize.query_table(

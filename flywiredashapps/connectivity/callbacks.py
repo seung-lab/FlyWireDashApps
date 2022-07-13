@@ -789,10 +789,10 @@ def register_callbacks(app, config=None):
         Input("submit_button", "n_clicks"),
         State("summary_table", "data",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
-        # State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
         # prevent_initial_call=True,
     )
-    def makeAllsynLink(n_clicks, query_data, cleft_thresh):
+    def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp):
         """Create neuroglancer link using selected partners.
 
         Keyword arguments:
@@ -806,8 +806,9 @@ def register_callbacks(app, config=None):
 
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
-        # ADD TIMESTAMP HERE #
-        out_url = buildAllsynLink(query_out, cleft_thresh, nuc, config=config)
+        out_url = buildAllsynLink(
+            query_out, cleft_thresh, nuc, config=config, timestamp=timestamp
+        )
 
         return [out_url, ""]
 
