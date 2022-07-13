@@ -17,7 +17,7 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
     """Generate NG link.
 
     Keyword arguments:
-    query_id -- single queried root id as list of int
+    query_id -- single queried root id as list of str
     cleft_thresh -- cleft score threshold to drop synapses as float
     nucleus -- x,y,z coordinates of query nucleus as list of ints
     config -- dictionary of config settings (default {})
@@ -38,72 +38,28 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
     seg = SegmentationLayerConfig(
         name="Production-segmentation_with_graph",
         source=client.info.segmentation_source(),
-        fixed_ids=[query_id],
-        fixed_id_colors="#00ffff",  # cyan #
+        fixed_ids=query_id,
+        fixed_id_colors=["#00ffff"],  # cyan #
         view_kws={"alpha_3d": 0.8},
     )
 
-    # makes dfs of all synapses for query neuron #
-    in_syn_df = client.materialize.query_table(
-        "synapses_nt_v1",
-        filter_in_dict={"post_pt_root_id": [int(query_id)]},
-        timestamp=timestamp,
-    )
-    out_syn_df = client.materialize.query_table(
-        "synapses_nt_v1",
-        filter_in_dict={"pre_pt_root_id": [int(query_id)]},
-        timestamp=timestamp,
-    )
+    print(query_id)
+    print(type(query_id))
 
-    # creates dataframe to use for link building and handles single-partner choices #
-    if up_ids[0] != 0 and down_ids[0] != 0:
-        up_syns_df = pd.DataFrame()
-        down_syns_df = pd.DataFrame()
-        for x in up_ids:
-            row_df = getSynNoCache(
-                x,
-                query_id[0],
-                cleft_thresh,
-                datastack_name=config.get("datastack", None),
-                server_address=config.get("server_address", None),
-            )[0]
-            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
-        for x in down_ids:
-            row_df = getSynNoCache(
-                query_id[0],
-                x,
-                cleft_thresh,
-                datastack_name=config.get("datastack", None),
-                server_address=config.get("server_address", None),
-            )[0]
-            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
-    elif up_ids[0] == 0 and down_ids[0] != 0:
-        up_syns_df = pd.DataFrame()
-        down_syns_df = pd.DataFrame()
-        for x in down_ids:
-            row_df = getSynNoCache(
-                query_id[0],
-                x,
-                cleft_thresh,
-                datastack_name=config.get("datastack", None),
-                server_address=config.get("server_address", None),
-            )[0]
-            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
-    elif up_ids[0] != 0 and down_ids[0] == 0:
-        up_syns_df = pd.DataFrame()
-        down_syns_df = pd.DataFrame()
-        for x in up_ids:
-            row_df = getSynNoCache(
-                x,
-                query_id[0],
-                cleft_thresh,
-                datastack_name=config.get("datastack", None),
-                server_address=config.get("server_address", None),
-            )[0]
-            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
-    else:
-        up_syns_df = pd.DataFrame()
-        down_syns_df = pd.DataFrame()
+    # builds nuc coords df using root id list #
+    nuc_coords_df = rootsToNucCoords(query_id, config)
+
+    # makes dfs of all synapses for query neuron #
+    up_syns_df = client.materialize.query_table(
+        "synapses_nt_v1",
+        filter_in_dict={"post_pt_root_id": query_id},
+        timestamp=timestamp,
+    )
+    down_syns_df = client.materialize.query_table(
+        "synapses_nt_v1",
+        filter_in_dict={"pre_pt_root_id": query_id},
+        timestamp=timestamp,
+    )
 
     if len(up_syns_df) > 0:
         # makes truncated df of pre & post coords #

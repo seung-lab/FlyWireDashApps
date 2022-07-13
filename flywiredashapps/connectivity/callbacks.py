@@ -272,6 +272,33 @@ def register_callbacks(app, config=None):
                             "width": "1000px",
                         },
                     ),
+                    # defines all-synapse link generation button #
+                    dbc.Button(
+                        "Generate NG Link with All Synapses",
+                        id="allsyn_link_button",
+                        n_clicks=0,
+                        target="tab",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines all-synapse link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="allsyn_link_loader", type="default", children="",
+                        ),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
                     # defines Summary App link button loader #
                     html.Div(
                         dcc.Loading(
@@ -339,34 +366,6 @@ def register_callbacks(app, config=None):
                             "margin-bottom": "25px",
                             "display": "inline-block",
                             "vertical-align": "top",
-                        },
-                    ),
-                    html.Br(),
-                    # defines all-synapse link generation button #
-                    dbc.Button(
-                        "Generate NG Link with All Synapses",
-                        id="allsyn_link_button",
-                        n_clicks=0,
-                        target="tab",
-                        style={
-                            "margin-top": "5px",
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "margin-bottom": "5px",
-                            "width": "420px",
-                            "display": "inline-block",
-                            "vertical-align": "top",
-                        },
-                    ),
-                    # defines all-synapse link button loader #
-                    html.Div(
-                        dcc.Loading(
-                            id="allsyn_link_loader", type="default", children="",
-                        ),
-                        style={
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "width": "1000px",
                         },
                     ),
                 ],
@@ -687,7 +686,8 @@ def register_callbacks(app, config=None):
         Input("submit_button", "n_clicks"),
         State("summary_table", "data",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
-        prevent_initial_call=True,
+        # State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
+        # prevent_initial_call=True,
     )
     def makeAllsynLink(n_clicks, query_data, cleft_thresh):
         """Create neuroglancer link using selected partners.
@@ -701,21 +701,10 @@ def register_callbacks(app, config=None):
         # gets id of queried neuron from table #
         query_out = [query_data[0]["Root ID"]]
 
-        # checks if partners are selected, gets their ids if so #
-        if up_rows == [] or up_rows == None:
-            up_out = [0]
-        else:
-            up_out = [up_data[x]["Upstream Partner ID"] for x in up_rows]
-        if down_rows == [] or down_rows == None:
-            down_out = [0]
-        else:
-            down_out = [down_data[x]["Downstream Partner ID"] for x in down_rows]
-
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
-        out_url = buildLink(
-            query_out, up_out, down_out, cleft_thresh, nuc, config=config
-        )
+        # ADD TIMESTAMP HERE #
+        out_url = buildAllsynLink(query_out, cleft_thresh, nuc, config=config)
 
         return [out_url, ""]
 
