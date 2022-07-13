@@ -4,6 +4,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 import flask
 from ..common.dash_url_helper import create_component_kwargs, State
+from .utils import getTime
 
 title = "Fly Partner Checker"
 
@@ -124,6 +125,38 @@ def page_layout(state={}):
                             ),
                         ],
                         style={"margin-left": "5px", "display": "inline-block",},
+                    ),
+                    html.Div(
+                        children=[
+                            # defines timestamp input message #
+                            dcc.Textarea(
+                                id="timestamp_message_text",
+                                value="Timestamp as datetime or Unix UTC (default now):",
+                                style={
+                                    "width": "400px",
+                                    "resize": "none",
+                                    "display": "block",
+                                    "vertical-align": "top",
+                                },
+                                rows=1,
+                                disabled=True,
+                            ),
+                            # defines timestamp input field #
+                            dcc.Input(
+                                **create_component_kwargs(
+                                    state,
+                                    id_inner="timestamp_field",
+                                    type="text",
+                                    placeholder="yyyy-mm-dd hh:mm:ss",
+                                    style={
+                                        "display": "block",
+                                        "width": "400px",
+                                        "vertical-align": "top",
+                                    },
+                                )
+                            ),
+                        ],
+                        style={"margin-left": "5px", "margin-top": "5px",},
                     ),
                 ]
             ),
