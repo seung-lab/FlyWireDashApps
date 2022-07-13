@@ -81,9 +81,9 @@ def page_layout(state={}):
                         id="timestamp_message_text",
                         value="Timestamp as datetime or Unix UTC (default now):",
                         style={
-                            "width": "300px",
+                            "width": "420px",
                             "resize": "none",
-                            "display": "inline-block",
+                            "display": "block",
                             "vertical-align": "top",
                         },
                         rows=1,
@@ -95,10 +95,10 @@ def page_layout(state={}):
                             state,
                             id_inner="timestamp_field",
                             type="text",
-                            placeholder=getTime(),
+                            placeholder="yyyy-mm-dd hh:mm:ss",
                             style={
-                                "display": "inline-block",
-                                "width": "120px",
+                                "display": "block",
+                                "width": "420px",
                                 "vertical-align": "top",
                             },
                         )

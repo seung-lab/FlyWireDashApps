@@ -217,15 +217,15 @@ def getNuc(root_id, config={}, timestamp=None):
 
     # gets current materialization version #
     # mat_vers = max(client.materialize.get_versions())
-
+    print("█████ BEFORE █████")
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
         "nuclei_v1",
-        filter_in_dict={"pt_root_id": [root_id]},
+        filter_in_dict={"pt_root_id": [int(root_id)]},
         # materialization_version=mat_vers,
         timestamp=timestamp,
     )
-
+    print("█████ AFTER █████")
     # converts nucleus coordinates from n to 4x4x40 resolution #
     nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]]
 
@@ -364,8 +364,8 @@ def rootListToDataFrame(root_list, config={}, timestamp=None):
                 # --------------------------FILTER TESTING----------------------------#
                 print("LEN FULL:", len(change_df["timestamp"]))
                 print("LEN FILT:", len(change_df.query("timestamp > 1642407000000")))
-                print("FULL:", change_df["timestamp"])
-                print("FILT:", change_df.query("timestamp > 1642407000"))
+                # print("FULL:", change_df["timestamp"])
+                # print("FILT:", change_df.query("timestamp > 1642407000"))
 
                 # --------------------------FILTER TESTING----------------------------#
 
@@ -384,7 +384,9 @@ def rootListToDataFrame(root_list, config={}, timestamp=None):
                 proofreaders = "n/a"
 
             # gets nucleus information #
+            print("█████ HERE █████")
             row_df = getNuc(i, config, timestamp=timestamp)
+            print("█████ HERE █████")
 
             # handles segments without nuclei #
             if row_df.empty:
@@ -424,7 +426,7 @@ def strToDatetime(string_timestamp):
     """Convert string timestamp to dateime.datetime.
     
     Keyword Arguments:
-    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S.%f e.g. 2022-07-04 17:43:06.826481 or unix UTC
+    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC
     """
 
     # converts if unix #
@@ -434,11 +436,18 @@ def strToDatetime(string_timestamp):
         # converts if datetime #
         try:
             out_stamp = datetime.datetime.strptime(
-                string_timestamp, "%Y-%m-%d %H:%M:%S.%f"
+                string_timestamp, "%Y-%m-%d %H:%M:%S"
             )
-        # returns None if formatting incorrect #
+        # corrects for removal of space by url helper #
         except:
-            out_stamp = None
+            try:
+                string_timestamp = string_timestamp[0:10] + " " + string_timestamp[10:]
+                out_stamp = datetime.datetime.strptime(
+                    string_timestamp, "%Y-%m-%d %H:%M:%S"
+                )
+            # returns None if formatting still incorrect #
+            except:
+                out_stamp = None
 
     return out_stamp
 
