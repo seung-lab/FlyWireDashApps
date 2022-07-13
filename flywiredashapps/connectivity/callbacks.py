@@ -158,48 +158,48 @@ def register_callbacks(app, config=None):
                 1,
                 "",
             ]
+        # FRESHNESS CHECKER TEMPORARILY DISABLED #
+        # # handles bad return from freshness checker #
+        # try:
+        #     fresh = checkFreshness(root_id, config=config, timestamp=timestamp)
+        # except:
+        #     return [
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
+        #         1,
+        #         "",
+        #     ]
 
-        # handles bad return from freshness checker #
-        try:
-            fresh = checkFreshness(root_id, config=config, timestamp=timestamp)
-        except:
-            return [
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
-                1,
-                "",
-            ]
-
-        # handles outdated ids #
-        if fresh == False:
-            return [
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
-                1,
-                "",
-            ]
-        else:
-            pass
+        # # handles outdated ids #
+        # if fresh == False:
+        #     return [
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #         "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
+        #         1,
+        #         "",
+        #     ]
+        # else:
+        #     pass
 
         # handles 0 ids if they somehow make it through all previous filters #
         if root_id == 0:
@@ -253,6 +253,7 @@ def register_callbacks(app, config=None):
         up_df = makePartnerDataFrame(
             root_id, cleft_thresh, upstream=True, config=config, timestamp=timestamp
         )
+        print(up_df)
         down_df = makePartnerDataFrame(
             root_id, cleft_thresh, upstream=False, config=config, timestamp=timestamp
         )
@@ -657,9 +658,12 @@ def register_callbacks(app, config=None):
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makePartLink(in_rows, out_rows, sum_data, in_data, out_data, timestamp):
+    def makePartLink(
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
+    ):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
@@ -693,7 +697,13 @@ def register_callbacks(app, config=None):
         elif len(full_list) > 2:
             return ["", "Select only 1-2 neurons to port to Partner App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "partner", config, timestamp=timestamp)
+        out_url = portUrl(
+            str(full_list)[1:-1],
+            "partner",
+            str(cleft_thresh),
+            config,
+            timestamp=timestamp,
+        )
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
@@ -709,9 +719,12 @@ def register_callbacks(app, config=None):
         State("incoming_table", "data",),
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
         prevent_initial_call=True,
     )
-    def makeSumLink(in_rows, out_rows, sum_data, in_data, out_data, timestamp):
+    def makeSumLink(
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
+    ):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
@@ -721,6 +734,7 @@ def register_callbacks(app, config=None):
         in_data -- dataframe of incoming table data
         out_data -- dataframe of outgoing table data
         timestamp -- str format utc timestamp
+        cleft_thresh -- 
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #
@@ -739,35 +753,16 @@ def register_callbacks(app, config=None):
         if len(full_list) > 20:
             return ["", "Select 20 or fewer neurons to port to Summary App", ""]
         # builds url using portUrl function #
-        out_url = portUrl(str(full_list)[1:-1], "summary", config, timestamp=timestamp)
+        out_url = portUrl(
+            str(full_list)[1:-1],
+            "summary",
+            str(cleft_thresh),
+            config,
+            timestamp=timestamp,
+        )
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]
-
-    # # CURRENTLY UNUSED defines callback that converts datetime timestamp input to unix #
-    # @app.callback(
-    #     Output({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
-    #     Input({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
-    #     prevent_initial_call=True,
-    # )
-    # def makeSumLink(timestamp):
-    #     """Convert datetime timestamp to unix for url feeding.
-
-    #     Keyword arguments:
-    #     timestamp -- str format utc timestamp
-    #     """
-
-    #     dt = strToDatetime(timestamp)
-
-    #     # doesn't update on bad input #
-    #     if dt == None:
-    #         return no_update
-    #     # doesn't update on unix input #
-    #     elif len(timestamp) == 10 and timestamp.isnumeric():
-    #         return no_update
-    #     # updates on datetime input #
-    #     else:
-    #         return datetimeToUnix(dt)
 
     pass
 

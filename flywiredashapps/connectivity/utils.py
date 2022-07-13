@@ -696,6 +696,7 @@ def makePartnerDataFrame(
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         column_name = "pre_pt_root_id"
         title_name = "Upstream Partner ID"
@@ -706,6 +707,7 @@ def makePartnerDataFrame(
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )[0]
         column_name = "post_pt_root_id"
         title_name = "Downstream Partner ID"
@@ -1110,7 +1112,7 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
     return root_id
 
 
-def portUrl(input_ids, app_choice, config={}, timestamp=None):
+def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
@@ -1118,20 +1120,36 @@ def portUrl(input_ids, app_choice, config={}, timestamp=None):
     app choice -- string choice of which app to send the inputs to
     config -- dictionary of config settings (default {})
     timestamp -- datetime format utc timestamp
+    cleft_thresh -- string format cleft threshold for synapses
     """
 
     if app_choice == "summary":
         base = config.get("sum_app_base_url", None)
         input_ids = input_ids.replace("'", "").replace(" ", "")
-        query = "?input_field=" + input_ids
+        query = (
+            "?input_field="
+            + input_ids
+            + "&timestamp_field="
+            + str(timestamp).replace(" ", "")
+        )
     elif app_choice == "partner":
         base = config.get("part_app_base_url", None)
         input_list = input_ids.split(",")
         input_a = input_list[0].strip()[1:-1]
         input_b = input_list[1].strip()[1:-1]
-        query = "?input_a=" + input_a + "&input_b=" + input_b + "&cleft_thresh_input=50"
+        query = (
+            "?input_a="
+            + input_a
+            + "&input_b="
+            + input_b
+            + "&cleft_thresh_input="
+            + cleft_thresh
+            + "&timestamp_field="
+            + str(timestamp).replace(" ", "")
+        )
 
     out_url = base + query
+    print("OUT URL:", out_url)
     return out_url
 
 
