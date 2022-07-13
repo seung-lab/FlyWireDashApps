@@ -253,7 +253,6 @@ def register_callbacks(app, config=None):
         up_df = makePartnerDataFrame(
             root_id, cleft_thresh, upstream=True, config=config, timestamp=timestamp
         )
-        print(up_df)
         down_df = makePartnerDataFrame(
             root_id, cleft_thresh, upstream=False, config=config, timestamp=timestamp
         )

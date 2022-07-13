@@ -1149,7 +1149,6 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
         )
 
     out_url = base + query
-    print("OUT URL:", out_url)
     return out_url
 
 
@@ -1171,8 +1170,6 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
 
     # drops 0-roots #
     roots = [int(x) for x in roots if int(x) != 0]
-
-    print("ROOTS:", roots)
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
@@ -1209,9 +1206,7 @@ def strToDatetime(string_timestamp):
         # corrects for removal of space by url helper #
         except:
             try:
-                print(string_timestamp)
                 string_timestamp = string_timestamp[0:10] + " " + string_timestamp[10:]
-                print(string_timestamp)
                 out_stamp = datetime.datetime.strptime(
                     string_timestamp, "%Y-%m-%d %H:%M:%S"
                 )

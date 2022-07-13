@@ -135,35 +135,36 @@ def register_callbacks(app, config=None):
         else:
             pass
 
-        # bad id handling #
-        try:
-            if (
-                checkFreshness(id_a, config, timestamp) == False
-                or checkFreshness(id_b, config, timestamp) == False
-            ):
-                return [
-                    no_update,
-                    no_update,
-                    "One or both IDs are bad.",
-                    1,
-                    "",
-                    no_update,
-                    no_update,
-                    no_update,
-                ]
-            else:
-                pass
-        except:
-            return [
-                no_update,
-                no_update,
-                "One or both IDs are bad.",
-                1,
-                "",
-                no_update,
-                no_update,
-                no_update,
-            ]
+        # bad id handling TEMPORARILY DISABLED #
+        # try:
+        #     if (
+        #         checkFreshness(id_a, config, timestamp) == False
+        #         or checkFreshness(id_b, config, timestamp) == False
+        #     ):
+        #         return [
+        #             no_update,
+        #             no_update,
+        #             "One or both IDs are bad.",
+        #             1,
+        #             "",
+        #             no_update,
+        #             no_update,
+        #             no_update,
+        #         ]
+        #     else:
+        #         pass
+        # except:
+        #     return [
+        #         no_update,
+        #         no_update,
+        #         "One or both IDs are bad.",
+        #         1,
+        #         "",
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #     ]
+
         if id_a == id_b:
             return [
                 no_update,
@@ -463,8 +464,9 @@ def register_callbacks(app, config=None):
         Input("post_submit_div", "children"),
         State("table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value"),
     )
-    def makeOutLinks(n_clicks, table_data, timestamp=None):
+    def makeOutLinks(n_clicks, table_data, timestamp=None, cleft_thresh=50):
         """Create outbound app links using selected IDs.
 
         Keyword arguments:
@@ -472,6 +474,7 @@ def register_callbacks(app, config=None):
         rows -- list of selected upstream row indices
         table_data -- dataframe of summary table data
         timestamp -- string format datetime or unix utc timestamp
+        cleft_thresh -- cleft score threshold for synapses 
         """
 
         root_A, root_B = [table_data[0]["Value"], table_data[3]["Value"]]
@@ -485,9 +488,27 @@ def register_callbacks(app, config=None):
         both_roots = root_A + "," + root_B
 
         # builds url using portUrl function #
-        con_url_A = portUrl(root_A, "connectivity", config, timestamp=timestamp,)
-        con_url_B = portUrl(root_B, "connectivity", config, timestamp=timestamp,)
-        sum_url = portUrl(both_roots, "summary", config, timestamp=timestamp,)
+        con_url_A = portUrl(
+            root_A,
+            "connectivity",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
+        con_url_B = portUrl(
+            root_B,
+            "connectivity",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
+        sum_url = portUrl(
+            both_roots,
+            "summary",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
 
         # returns url string, alters button text, sends empty string for loader #
         return [con_url_A, con_url_B, sum_url]

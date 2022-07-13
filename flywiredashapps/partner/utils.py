@@ -601,7 +601,7 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
     return root_id
 
 
-def portUrl(input_ids, app_choice, config={}, timestamp=None):
+def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
@@ -613,10 +613,23 @@ def portUrl(input_ids, app_choice, config={}, timestamp=None):
 
     if app_choice == "connectivity":
         base = config.get("con_app_base_url", None)
-        query = "?input_field=" + input_ids + "&cleft_thresh_field=50"
+        query = (
+            "?input_field="
+            + input_ids
+            + "&cleft_thresh_field="
+            + cleft_thresh
+            + "&timestamp_field="
+            + str(timestamp).replace(" ", "")
+        )
     elif app_choice == "summary":
         base = config.get("sum_app_base_url", None)
-        query = "?input_field=" + input_ids
+        input_ids = input_ids.replace("'", "").replace(" ", "")
+        query = (
+            "?input_field="
+            + input_ids
+            + "&timestamp_field="
+            + str(timestamp).replace(" ", "")
+        )
 
     out_url = base + query
     return out_url
