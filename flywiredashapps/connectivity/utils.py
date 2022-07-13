@@ -43,9 +43,6 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
         view_kws={"alpha_3d": 0.8},
     )
 
-    print(query_id)
-    print(type(query_id))
-
     # builds nuc coords df using root id list #
     nuc_coords_df = rootsToNucCoords(query_id, config)
 
