@@ -341,6 +341,34 @@ def register_callbacks(app, config=None):
                             "vertical-align": "top",
                         },
                     ),
+                    html.Br(),
+                    # defines all-synapse link generation button #
+                    dbc.Button(
+                        "Generate NG Link with All Synapses",
+                        id="allsyn_link_button",
+                        n_clicks=0,
+                        target="tab",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines all-synapse link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="allsyn_link_loader", type="default", children="",
+                        ),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
                 ],
             ),
         ]
@@ -651,6 +679,45 @@ def register_callbacks(app, config=None):
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]
+
+    # defines callback that generates allsyn neuroglancer link #
+    @app.callback(
+        Output("allsyn_link_button", "href",),
+        Output("allsyn_link_loader", "children",),
+        Input("submit_button", "n_clicks"),
+        State("summary_table", "data",),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
+        prevent_initial_call=True,
+    )
+    def makeAllsynLink(n_clicks, query_data, cleft_thresh):
+        """Create neuroglancer link using selected partners.
+
+        Keyword arguments:
+        n_clicks -- unused trigger
+        query_data -- dataframe of summary table data
+        cleft_thresh -- float value of cleft threshold field
+        """
+
+        # gets id of queried neuron from table #
+        query_out = [query_data[0]["Root ID"]]
+
+        # checks if partners are selected, gets their ids if so #
+        if up_rows == [] or up_rows == None:
+            up_out = [0]
+        else:
+            up_out = [up_data[x]["Upstream Partner ID"] for x in up_rows]
+        if down_rows == [] or down_rows == None:
+            down_out = [0]
+        else:
+            down_out = [down_data[x]["Downstream Partner ID"] for x in down_rows]
+
+        nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
+
+        out_url = buildLink(
+            query_out, up_out, down_out, cleft_thresh, nuc, config=config
+        )
+
+        return [out_url, ""]
 
     pass
 
