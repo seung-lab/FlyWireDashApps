@@ -28,15 +28,27 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
     )
-    def update_output(n_clicks, query_id, cleft_thresh, timestamp):
+    def update_output(n_clicks, query_id, cleft_thresh, timestamp, filter_list):
         """Create summary and partner tables with violin plots for queried root id.
         Keyword arguments:
         n_clicks -- tracks clicks for submit button
         query_id -- root id of queried neuron as int
         cleft_thresh -- float value of cleft score threshold
         timestamp -- str format utc timestamp as datetime or unix
+        filter_list -- str list of root ids to filter results by
         """
+
+        # if filter list exists, converts to array of uint64s #
+        if filter_list != None:
+            filter_list = filter_list.strip("[")
+            filter_list = filter_list.strip("]")
+            filter_list = filter_list.split(",")
+            filter_list = [x.strip(" ") for x in filter_list]
+            filter_list = np.array(filter_list, dtype=np.uint64)
+        else:
+            pass
 
         # sets start time #
         start_time = time.time()
@@ -223,7 +235,11 @@ def register_callbacks(app, config=None):
 
         # builds dataframes and graphs #
         sum_list = makeSummaryDataFrame(
-            root_id, cleft_thresh, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         sum_df = sum_list[0]
 
@@ -250,22 +266,52 @@ def register_callbacks(app, config=None):
             pass
 
         up_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            upstream=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            upstream=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         up_violin = makeViolin(
-            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_violin = makeViolin(
-            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         up_pie = makePie(
-            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_pie = makePie(
-            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
 
         # assigns df values to 'cols' and 'data' for passing to dash table #
