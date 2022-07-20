@@ -232,6 +232,44 @@ def getNuc(root_id, config={}):
     return out_df.astype(str)
 
 
+def getTypes(root_id, config={}):
+    """Query cell type table and return str-format list of unique values.
+
+    Keyword arguments:
+    root_id -- root or nucleus id formatted as listed str
+    config -- dictionary of config settings (default {})
+    """
+
+    # sets client using config #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # gets current materialization version #
+    mat_vers = max(client.materialize.get_versions())
+
+    # queries cell type table using root id #
+    type_df = client.materialize.query_table(
+        "neuron_information_v2",
+        filter_in_dict={"pt_root_id": [root_id]},
+        materialization_version=mat_vers,
+    )
+
+    # makes series of uniuqe values and converts to list #
+    tags = type_df["tag"].unique().tolist()
+
+    # converts list to string and removes brackets #
+    tags = str(tags)[1:-1]
+
+    # handles neurons with no tags #
+    if tags == "":
+        tags = "n/a"
+    else:
+        pass
+
+    return tags
+
+
 def inputToRootList(input_str, config={}):
     """Convert input string into list of int root ids.
 
@@ -325,6 +363,7 @@ def rootListToDataFrame(root_list, config={}):
             "Merges",
             "Total Edits",
             "Editors",
+            "Cell Identification",
             "Current",
         ]
     )
@@ -366,10 +405,13 @@ def rootListToDataFrame(root_list, config={}):
                     index=[0],
                 ).astype(str)
 
+            types = getTypes(i, config)
+
             row_df["Splits"] = str(edits_dict[False])
             row_df["Merges"] = str(edits_dict[True])
             row_df["Total Edits"] = str(len(change_df))
             row_df["Editors"] = proofreaders
+            row_df["Cell Identification"] = types
             row_df["Current"] = freshness[0]
 
         # handles bad ids #
@@ -383,6 +425,7 @@ def rootListToDataFrame(root_list, config={}):
                     "Merges": "BAD ID",
                     "Total Edits": "BAD ID",
                     "Editors": "BAD ID",
+                    "Cell Identification": "BAD ID",
                     "Current": "BAD ID",
                 },
                 index=[0],

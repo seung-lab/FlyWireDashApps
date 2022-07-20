@@ -11,6 +11,7 @@ def register_callbacks(app, config=None):
         Output("post_submit_div", "children"),
         Output("table", "columns"),
         Output("table", "data"),
+        Output("table", "tooltip_data"),
         Output("message_text", "value"),
         Output("message_text", "rows"),
         Output("submit_loader", "children"),
@@ -161,6 +162,7 @@ def register_callbacks(app, config=None):
                     no_update,
                     no_update,
                     no_update,
+                    no_update,
                     "Please limit each query to a maximum of 20 items.",
                     1,
                     "",
@@ -196,7 +198,23 @@ def register_callbacks(app, config=None):
                     )
                     mess_rows = 2
 
-                return [post_div, column_list, data_dict, message_text, mess_rows, ""]
+                tooltip_data = [
+                    {
+                        column: {"value": str(value), "type": "markdown"}
+                        for column, value in row.items()
+                    }
+                    for row in data_dict
+                ]
+
+                return [
+                    post_div,
+                    column_list,
+                    data_dict,
+                    tooltip_data,
+                    message_text,
+                    mess_rows,
+                    "",
+                ]
         else:
             raise PreventUpdate
 
