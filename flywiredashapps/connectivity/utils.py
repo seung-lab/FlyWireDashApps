@@ -14,7 +14,9 @@ from pytz import NonExistentTimeError
 from ..common import lookup_utilities
 
 
-def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
+def buildAllsynLink(
+    query_id, cleft_thresh, nucleus, config={}, timestamp=None, filter_list=None
+):
     """Generate NG link.
 
     Keyword arguments:
@@ -22,6 +24,7 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
     cleft_thresh -- cleft score threshold to drop synapses as float
     nucleus -- x,y,z coordinates of query nucleus as list of ints
     config -- dictionary of config settings (default {})
+    filter_list -- str list of root ids to filter results by (default None)
     """
 
     if timestamp == None:
@@ -52,16 +55,34 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
     query_id = [int(x) for x in query_id]
 
     # makes dfs of all synapses for query neuron #
-    up_syns_df = client.materialize.query_table(
-        "synapses_nt_v1",
-        filter_in_dict={"post_pt_root_id": query_id},
-        timestamp=timestamp,
-    )
-    down_syns_df = client.materialize.query_table(
-        "synapses_nt_v1",
-        filter_in_dict={"pre_pt_root_id": query_id},
-        timestamp=timestamp,
-    )
+    if filter_list == None:
+        up_syns_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"post_pt_root_id": query_id},
+            timestamp=timestamp,
+        )
+        down_syns_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={"pre_pt_root_id": query_id},
+            timestamp=timestamp,
+        )
+    else:
+        up_syns_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={
+                "post_pt_root_id": query_id,
+                "pre_pt_root_id": filter_list,
+            },
+            timestamp=timestamp,
+        )
+        down_syns_df = client.materialize.query_table(
+            "synapses_nt_v1",
+            filter_in_dict={
+                "pre_pt_root_id": query_id,
+                "post_pt_root_id": filter_list,
+            },
+            timestamp=timestamp,
+        )
 
     if len(up_syns_df) > 0:
         # makes truncated df of pre & post coords #
@@ -199,7 +220,7 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 x,
                 query_id[0],
                 cleft_thresh,
@@ -209,7 +230,7 @@ def buildLink(
             )[0]
             up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
         for x in down_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 query_id[0],
                 x,
                 cleft_thresh,
@@ -222,7 +243,7 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in down_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 query_id[0],
                 x,
                 cleft_thresh,
@@ -235,9 +256,9 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 x,
-                query_id[0],
+                int(query_id[0]),
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
@@ -387,7 +408,7 @@ def getNuc(root_id, config={}, timestamp=None):
     Keyword arguments:
     root_id -- root or nucleus id formatted as int
     config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    timestamp -- datetime format utc timestamp (default None)
     """
 
     # sets client #
@@ -395,15 +416,9 @@ def getNuc(root_id, config={}, timestamp=None):
         config.get("datastack", None), config.get("server_address", None)
     )
 
-    # # gets current materialization version #
-    # mat_vers = max(client.materialize.get_versions())
-
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1",
-        filter_in_dict={"pt_root_id": [root_id]},
-        # materialization_version=mat_vers,
-        timestamp=timestamp,
+        "nuclei_v1", filter_in_dict={"pt_root_id": [root_id]}, timestamp=timestamp,
     )
 
     # handles roots with multiple nuclei #
@@ -440,15 +455,17 @@ def getSyn(
     datastack_name=None,
     server_address=None,
     timestamp=None,
+    filter_list=None,
 ):
     """Create a cached table of synapses for a given root id.
     Keyword arguments:
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
-    datastack_name -- string name of datastack
-    server_address -- string format server address
-    timestamp -- datetime format utc timestamp
+    datastack_name -- string name of datastack (default None)
+    server_address -- string format server address (default None)
+    timestamp -- datetime format utc timestamp (default None)
+    filter_list -- list of str-format ids to filter results (default None)
     """
 
     # sets client #
@@ -458,7 +475,8 @@ def getSyn(
     # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
-        # creates df that includes neuropil regions using root id #
+
+        # TEMPORARILY DISABLED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
@@ -466,11 +484,26 @@ def getSyn(
         #     # materialization_version=mat_vers,
         #     timestamp=timestamp,
         # )
-        raw_syn_df = client.materialize.query_table(
-            "synapses_nt_v1",
-            filter_in_dict={"pre_pt_root_id": [pre_root]},
-            timestamp=timestamp,
-        )
+
+        # creates df that includes neuropil regions using root id #
+        # optionally fiters query using filter_list #
+        # if no filter list, skips this step #
+        if filter_list == None:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={"pre_pt_root_id": [pre_root]},
+                timestamp=timestamp,
+            )
+        else:
+            # performs query with filter tuple #
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={
+                    "pre_pt_root_id": [pre_root],
+                    "post_pt_root_id": filter_list,
+                },
+                timestamp=timestamp,
+            )
         np_df = client.materialize.query_table(
             "fly_synapses_neuropil",
             # filters using array of syn ids from raw_syn_df #
@@ -486,6 +519,7 @@ def getSyn(
             how="inner",
             suffixes=["syn", "np"],
         )
+
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
         # syn_df = client.materialize.join_query(
@@ -495,11 +529,22 @@ def getSyn(
         #     # materialization_version=mat_vers,
         #     timestamp=timestamp,
         # )
-        raw_syn_df = client.materialize.query_table(
-            "synapses_nt_v1",
-            filter_in_dict={"post_pt_root_id": [post_root]},
-            timestamp=timestamp,
-        )
+        # optionally fiters query using filter_list #
+        if filter_list == None:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={"post_pt_root_id": [post_root]},
+                timestamp=timestamp,
+            )
+        else:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={
+                    "post_pt_root_id": [post_root],
+                    "pre_pt_root_id": filter_list,
+                },
+                timestamp=timestamp,
+            )
         np_df = client.materialize.query_table(
             "fly_synapses_neuropil",
             # filters using array of syn ids from raw_syn_df #
@@ -532,8 +577,8 @@ def getSyn(
         raw_syn_df = client.materialize.query_table(
             "synapses_nt_v1",
             filter_in_dict={
-                "pre_pt_root_id": [pre_root],
-                "post_pt_root_id": [post_root],
+                "pre_pt_root_id": [int(pre_root)],
+                "post_pt_root_id": [int(post_root)],
             },
             timestamp=timestamp,
         )
@@ -552,10 +597,6 @@ def getSyn(
             how="inner",
             suffixes=["syn", "np"],
         )
-
-    # # converts cleft scores from str to int #
-    # if type(syn_df["cleft_score"]) == str:
-    #     syn_df = syn_df.astype({"cleft_score": "int"}).dtypes
 
     raw_num = len(syn_df)
 
@@ -601,22 +642,21 @@ def getSynNoCache(
     datastack_name=None,
     server_address=None,
     timestamp=None,
+    filter_list=None,
 ):
     """Create an uncached table of synapses for a given root id.
     Keyword arguments:
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
     cleft_thresh -- float-format cleft score threshold to drop synapses (default 0.0)
-    datastack_name -- string name of datastack
-    server_address -- string format server address
-    timestamp -- datetime format utc timestamp
+    datastack_name -- string name of datastack (default None)
+    server_address -- string format server address (default None)
+    timestamp -- datetime format utc timestamp (default None)
+    filter_list -- list of str-format ids to filter results (default None)
     """
 
     # sets client #
     client = lookup_utilities.make_client(datastack_name, server_address)
-
-    # # gets current materialization version #
-    # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -627,11 +667,23 @@ def getSynNoCache(
         #     # materialization_version=mat_vers,
         #     timestamp=timestamp,
         # )
-        raw_syn_df = client.materialize.query_table(
-            "synapses_nt_v1",
-            filter_in_dict={"pre_pt_root_id": [pre_root]},
-            timestamp=timestamp,
-        )
+        # optionally fiters query using filter_list #
+        if filter_list == None:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={"pre_pt_root_id": [pre_root]},
+                timestamp=timestamp,
+            )
+        else:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={
+                    "pre_pt_root_id": [pre_root],
+                    "post_pt_root_id": filter_list,
+                },
+                timestamp=timestamp,
+            )
+
         np_df = client.materialize.query_table(
             "fly_synapses_neuropil",
             # filters using array of syn ids from raw_syn_df #
@@ -656,11 +708,22 @@ def getSynNoCache(
         #     # materialization_version=mat_vers,
         #     timestamp=timestamp,
         # )
-        raw_syn_df = client.materialize.query_table(
-            "synapses_nt_v1",
-            filter_in_dict={"post_pt_root_id": [post_root]},
-            timestamp=timestamp,
-        )
+        if filter_list == None:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={"post_pt_root_id": [post_root]},
+                timestamp=timestamp,
+            )
+        else:
+            raw_syn_df = client.materialize.query_table(
+                "synapses_nt_v1",
+                filter_in_dict={
+                    "post_pt_root_id": [post_root],
+                    "pre_pt_root_id": filter_list,
+                },
+                timestamp=timestamp,
+            )
+
         np_df = client.materialize.query_table(
             "fly_synapses_neuropil",
             # filters using array of syn ids from raw_syn_df #
@@ -791,7 +854,7 @@ def idConvert(id_val, config, timestamp=None):
 
 
 def makePartnerDataFrame(
-    root_id, cleft_thresh, upstream=False, config={}, timestamp=None
+    root_id, cleft_thresh, upstream=False, config={}, timestamp=None, filter_list=None
 ):
     """Make dataframe with summary info.
     Keyword arguments:
@@ -800,6 +863,7 @@ def makePartnerDataFrame(
     upstream -- Boolean that determines whether df is upstream or downstream (default False)
     config -- dictionary of config settings (default {})
     timestamp -- datetime format utc timestamp
+    filter_list -- str list of root ids to filter results by (default None)
     """
 
     # makes df of queried neuron synapses #
@@ -811,6 +875,7 @@ def makePartnerDataFrame(
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         column_name = "pre_pt_root_id"
         title_name = "Upstream Partner ID"
@@ -822,6 +887,7 @@ def makePartnerDataFrame(
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         column_name = "post_pt_root_id"
         title_name = "Downstream Partner ID"
@@ -873,7 +939,9 @@ def makePartnerDataFrame(
     return partner_df.astype(str)
 
 
-def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
+def makePie(
+    root_id, cleft_thresh, incoming=False, config={}, timestamp=None, filter_list=None
+):
     """Create pie chart of relative synapse neuropils.
     Keyword arguments:
     root_id -- single int-format root id number
@@ -881,6 +949,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     incoming -- boolean to specify incoming or outgoing synapses (default False)
     config -- dictionary of config settings (default {})
     timestamp -- datetime format utc timestamp
+    filter_list -- str list of root ids to filter results by (default None)
     """
 
     # sets variable for incoming or outgoing synapses
@@ -892,6 +961,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         title_name = "Incoming Synapse Neuropils"
     elif incoming == False:
@@ -902,6 +972,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         title_name = "Outgoing Synapse Neuropils"
 
@@ -1043,13 +1114,16 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     return region_pie
 
 
-def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
+def makeSummaryDataFrame(
+    root_id, cleft_thresh, config={}, timestamp=None, filter_list=None
+):
     """Make dataframe with summary info.
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     cleft_thresh -- float-format cleft score threshold
     config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    timestamp -- datetime-format utc timestamp (default None)
+    filter_list -- list of str-format root ids for filtering results (default None)
     """
 
     # runs up and downstream queries and returns list with [df,message] #
@@ -1060,6 +1134,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
         timestamp=timestamp,
+        filter_list=filter_list,
     )
     down_query = getSyn(
         pre_root=root_id,
@@ -1068,6 +1143,7 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
         datastack_name=config.get("datastack", None),
         server_address=config.get("server_address", None),
         timestamp=timestamp,
+        filter_list=filter_list,
     )
 
     # makes df of query nucleus, upstream and downstream synapses #
@@ -1124,14 +1200,17 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
     return [full_sum_df, output_message]
 
 
-def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
+def makeViolin(
+    root_id, cleft_thresh, incoming=False, config={}, timestamp=None, filter_list=None
+):
     """Build violin plots of up- and downstream neurotransmitter values.
     Keyword arguments:
     root_id -- single int-format root id number
     cleft_thresh -- float-format cleft score threshold to drop synapses
     incoming -- boolean to specify incoming or outgoing synapses (default False)
     config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    timestamp -- datetime format utc timestamp (default None)
+    filter_list -- str list of root ids to filter results by (default None)
     """
 
     # sets variable for incoming or outgoing synapses
@@ -1143,6 +1222,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         title_name = "Outgoing Synapse NT Scores"
     elif incoming == True:
@@ -1153,6 +1233,7 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
             timestamp=timestamp,
+            filter_list=filter_list,
         )[0]
         title_name = "Incoming Synapse NT Scores"
 
