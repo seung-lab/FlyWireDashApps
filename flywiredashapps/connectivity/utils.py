@@ -869,6 +869,11 @@ def makePartnerDataFrame(
         .reset_index(drop=True)
     )
 
+    # converts root ids into markdown-readable refeeder links #
+    partner_df[title_name] = [
+        refeedLink(str(x), config) for x in partner_df[title_name]
+    ]
+
     # needs to be converted to strings or the dash table will round the IDs #
     return partner_df.astype(str)
 
@@ -1260,7 +1265,24 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
     return out_url
 
 
+
+def refeedLink(root_id, config={}):
+    """Convert root id into markdown-format refeed link.
+
+    Keyword arguments:
+    root_id -- string-format 18-digit root id
+    config -- dictionary of config settings (default {})
+    """
+
+    base = config.get("con_app_base_url", None)
+    query = "?input_field=" + root_id + "&cleft_thresh_field=50"
+    out_url = base + query
+    markdown_url = "[" + root_id + "](" + out_url + ")"
+    return markdown_url
+
+
 def rootsToNucCoords(roots, config={}, timestamp=None):
+
     """Convert list of root ids to one-column df of nucleus coordinates.
     
     Keyword Arguments:

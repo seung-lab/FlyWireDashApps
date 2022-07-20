@@ -276,6 +276,12 @@ def register_callbacks(app, config=None):
         up_data = up_df.to_dict("records")
         down_data = down_df.to_dict("records")
 
+        up_cols[0]["presentation"] = "markdown"
+        down_cols[0]["presentation"] = "markdown"
+
+        print(up_cols[0]["presentation"])
+        print(down_cols[0]["presentation"])
+
         # builds list of figures to pass to children of graph_div #
         figs = [
             html.Div(
@@ -646,7 +652,14 @@ def register_callbacks(app, config=None):
         table_data -- data from upstream table
         """
 
+        # converts table data to dataframe #
         upstream_df = pd.DataFrame(table_data)
+
+        # converts markdown back into normal root id #
+        upstream_df["Upstream Partner ID"] = [
+            x[1:19] for x in upstream_df["Upstream Partner ID"]
+        ]
+
         return dcc.send_data_frame(upstream_df.to_csv, "upstream_table.csv")
 
     # defines callback to download downstream table as csv on button press #
@@ -663,8 +676,13 @@ def register_callbacks(app, config=None):
         table_data -- data from downstream table
         """
 
+        # converts table data to dataframe #
         downstream_df = pd.DataFrame(table_data)
-        downstream_df.head()
+
+        # converts markdown back into normal root id #
+        downstream_df["Downstream Partner ID"] = [
+            x[1:19] for x in downstream_df["Downstream Partner ID"]
+        ]
         return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
 
     # defines callback that generates partner app link  #
