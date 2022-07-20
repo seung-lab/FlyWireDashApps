@@ -220,7 +220,7 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 x,
                 query_id[0],
                 cleft_thresh,
@@ -230,7 +230,7 @@ def buildLink(
             )[0]
             up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
         for x in down_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 query_id[0],
                 x,
                 cleft_thresh,
@@ -243,7 +243,7 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in down_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 query_id[0],
                 x,
                 cleft_thresh,
@@ -256,9 +256,9 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
-            row_df = getSynNoCache(
+            row_df = getSyn(
                 x,
-                query_id[0],
+                int(query_id[0]),
                 cleft_thresh,
                 datastack_name=config.get("datastack", None),
                 server_address=config.get("server_address", None),
@@ -475,7 +475,8 @@ def getSyn(
     # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
-        # creates df that includes neuropil regions using root id #
+
+        # TEMPORARILY DISABLED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
@@ -483,7 +484,10 @@ def getSyn(
         #     # materialization_version=mat_vers,
         #     timestamp=timestamp,
         # )
+
+        # creates df that includes neuropil regions using root id #
         # optionally fiters query using filter_list #
+        # if no filter list, skips this step #
         if filter_list == None:
             raw_syn_df = client.materialize.query_table(
                 "synapses_nt_v1",
@@ -491,6 +495,7 @@ def getSyn(
                 timestamp=timestamp,
             )
         else:
+            # performs query with filter tuple #
             raw_syn_df = client.materialize.query_table(
                 "synapses_nt_v1",
                 filter_in_dict={
@@ -572,8 +577,8 @@ def getSyn(
         raw_syn_df = client.materialize.query_table(
             "synapses_nt_v1",
             filter_in_dict={
-                "pre_pt_root_id": [pre_root],
-                "post_pt_root_id": [post_root],
+                "pre_pt_root_id": [int(pre_root)],
+                "post_pt_root_id": [int(post_root)],
             },
             timestamp=timestamp,
         )
@@ -1120,9 +1125,6 @@ def makeSummaryDataFrame(
     timestamp -- datetime-format utc timestamp (default None)
     filter_list -- list of str-format root ids for filtering results (default None)
     """
-
-    print("FILTER LIST:", filter_list)
-    print("FILTER LIST TYPE:", type(filter_list))
 
     # runs up and downstream queries and returns list with [df,message] #
     up_query = getSyn(
