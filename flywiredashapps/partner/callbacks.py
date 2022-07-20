@@ -1,7 +1,7 @@
 import time
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, dcc, html, Input, Output, State, dash_table
+from dash import Dash, dcc, html, Input, Output, State, dash_table, no_update
 import urllib.parse
 from itertools import compress
 from dash.exceptions import PreventUpdate
@@ -23,8 +23,9 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_a"}, "value",),
         State({"type": "url_helper", "id_inner": "input_b"}, "value",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
-    def update_output(n_clicks, id_a, id_b, cleft_thresh):
+    def update_output(n_clicks, id_a, id_b, cleft_thresh, timestamp=None):
         """Update app based on input.
         
         Keyword arguments:
@@ -32,11 +33,48 @@ def register_callbacks(app, config=None):
         id_a -- str format root or nuc id of input a
         id_b -- str format root or nuc id of input b
         cleft_thresh -- float value of cleft threshold field
+        timestamp -- string format datetime or unix utc timestamp
         """
 
         # avoids premature submission #
         if id_a == None or id_b == None:
             raise PreventUpdate
+        else:
+            pass
+
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None or timestamp == "":
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
+
+        # handles bad input (which results in a None output from strToDatetime) #
+        if timestamp == None:
+            return [
+                no_update,
+                no_update,
+                "Please enter timestamp in datetime format YYYY-MM-DD HH:MM:SS, e.g. 2022-07-11 13:25:46 or unix UTC, e.g. 1642407000",
+                2,
+                "",
+                no_update,
+                no_update,
+                no_update,
+            ]
+        else:
+            pass
+
+        # handles outdated timestamps from before 2022 Jan 17 #
+        if datetimeToUnix(timestamp) < 1642407000:
+            return [
+                no_update,
+                no_update,
+                "Timestamp out of current date range, must be newer than 2022-01-17.",
+                1,
+                "",
+                no_update,
+                no_update,
+                no_update,
+            ]
         else:
             pass
 
@@ -61,14 +99,14 @@ def register_callbacks(app, config=None):
         # bad id handling #
         if (len(id_a) != 18 and len(id_a) != 7) or (len(id_b) != 18 and len(id_b) != 7):
             return [
-                [],
-                [],
+                no_update,
+                no_update,
                 "One or both IDs are invalid. Please enter 18-digit root or 7-digit nucleus IDs only.",
                 1,
                 "",
-                [],
-                [],
-                [],
+                no_update,
+                no_update,
+                no_update,
             ]
         else:
             pass
@@ -77,54 +115,73 @@ def register_callbacks(app, config=None):
             id_b = int(id_b)
         except:
             return [
-                [],
-                [],
+                no_update,
+                no_update,
                 "One or both IDs are invalid. Please enter a single 18-digit root or 7-digit nucleus ID in each field.",
                 1,
                 "",
-                [],
-                [],
-                [],
+                no_update,
+                no_update,
+                no_update,
             ]
 
         # nuc id detection and conversion #
         if len(str(id_a)) == 7:
-            id_a = nucToRoot(id_a, config)
+            id_a = nucToRoot(id_a, config, timestamp=timestamp)
         else:
             pass
         if len(str(id_b)) == 7:
-            id_b = nucToRoot(id_b, config)
+            id_b = nucToRoot(id_b, config, timestamp=timestamp)
         else:
             pass
 
-        # bad id handling #
-        try:
-            if (
-                checkFreshness(id_a, config) == False
-                or checkFreshness(id_b, config) == False
-            ):
-                return [[], [], "One or both IDs are bad.", 1, "", [], [], []]
-            else:
-                pass
-        except:
-            return [[], [], "One or both IDs are bad.", 1, "", [], [], []]
+        # bad id handling TEMPORARILY DISABLED #
+        # try:
+        #     if (
+        #         checkFreshness(id_a, config, timestamp) == False
+        #         or checkFreshness(id_b, config, timestamp) == False
+        #     ):
+        #         return [
+        #             no_update,
+        #             no_update,
+        #             "One or both IDs are bad.",
+        #             1,
+        #             "",
+        #             no_update,
+        #             no_update,
+        #             no_update,
+        #         ]
+        #     else:
+        #         pass
+        # except:
+        #     return [
+        #         no_update,
+        #         no_update,
+        #         "One or both IDs are bad.",
+        #         1,
+        #         "",
+        #         no_update,
+        #         no_update,
+        #         no_update,
+        #     ]
+
         if id_a == id_b:
             return [
-                [],
-                [],
+                no_update,
+                no_update,
                 "Both IDs are from the same neuron, please submit 2 different neurons.",
                 2,
                 "",
-                [],
-                [],
-                [],
+                no_update,
+                no_update,
+                no_update,
             ]
         else:
             pass
 
         # makes nuc dfs #
-        nuc_a_df = getNuc(id_a, config)
-        nuc_b_df = getNuc(id_b, config)
+        nuc_a_df = getNuc(id_a, config, timestamp)
+        nuc_b_df = getNuc(id_b, config, timestamp)
 
         # handles cells without nuclei
         try:
@@ -164,6 +221,7 @@ def register_callbacks(app, config=None):
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )
         b_to_a_df, b_to_a_message = getSyn(
             pre_root=id_b,
@@ -171,6 +229,7 @@ def register_callbacks(app, config=None):
             cleft_thresh=cleft_thresh,
             datastack_name=config.get("datastack", None),
             server_address=config.get("server_address", None),
+            timestamp=timestamp,
         )
 
         message = "A>B: " + a_to_b_message + "\n" + "B>A: " + b_to_a_message
@@ -192,16 +251,36 @@ def register_callbacks(app, config=None):
 
         # makes violin and pie charts #
         a_to_b_violin = makePartnerViolin(
-            id_a, id_b, cleft_thresh, "A>B Synapse NT Scores", config,
+            id_a,
+            id_b,
+            cleft_thresh,
+            "A>B Synapse NT Scores",
+            config,
+            timestamp=timestamp,
         )
         b_to_a_violin = makePartnerViolin(
-            id_b, id_a, cleft_thresh, "B>A Synapse NT Scores", config
+            id_b,
+            id_a,
+            cleft_thresh,
+            "B>A Synapse NT Scores",
+            config,
+            timestamp=timestamp,
         )
         a_to_b_pie = makePartnerPie(
-            id_a, id_b, cleft_thresh, "A>B Synapse Neuropils", config
+            id_a,
+            id_b,
+            cleft_thresh,
+            "A>B Synapse Neuropils",
+            config,
+            timestamp=timestamp,
         )
         b_to_a_pie = makePartnerPie(
-            id_b, id_a, cleft_thresh, "B>A Synapse Neuropils", config
+            id_b,
+            id_a,
+            cleft_thresh,
+            "B>A Synapse Neuropils",
+            config,
+            timestamp=timestamp,
         )
 
         # builds list of figures to pass to children of graph_div #
@@ -230,7 +309,7 @@ def register_callbacks(app, config=None):
                 "Generate NG Link Using Partners",
                 id="link_button",
                 n_clicks=0,
-                target="tab",
+                target="_blank",
                 style={
                     "margin-top": "5px",
                     "margin-right": "5px",
@@ -246,7 +325,7 @@ def register_callbacks(app, config=None):
                 "Port Neuron A to Connectivity App",
                 id="connectivity_link_button_A",
                 n_clicks=0,
-                target="tab",
+                target="_blank",
                 style={
                     "margin-top": "5px",
                     "margin-right": "5px",
@@ -262,7 +341,7 @@ def register_callbacks(app, config=None):
                 "Port Neuron B to Connectivity App",
                 id="connectivity_link_button_B",
                 n_clicks=0,
-                target="tab",
+                target="_blank",
                 style={
                     "margin-top": "5px",
                     "margin-right": "5px",
@@ -278,7 +357,7 @@ def register_callbacks(app, config=None):
                 "Port Neurons to Summary App",
                 id="summary_link_button",
                 n_clicks=0,
-                target="tab",
+                target="_blank",
                 style={
                     "margin-top": "5px",
                     "margin-right": "5px",
@@ -325,19 +404,26 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_b"}, "value",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value",),
         State("table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
-    def makeLink(n_clicks, id_a, id_b, cleft_thresh, table_data):
+    def makeLink(n_clicks, id_a, id_b, cleft_thresh, table_data, timestamp=None):
         """Create neuroglancer link using selected partners.
-
         Keyword arguments:
         n_clicks -- unused dummy for trigger
         id_a -- ??? format root id of input a
         id_b -- ??? format root id of input b
         cleft_thresh -- float value of cleft threshold field
         table_data -- dataframe of summary table data
+        timestamp -- string format datetime or unix utc timestamp
         """
 
         table_df = pd.DataFrame(table_data)
+
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
 
         # makes list of nucleus coord strings #
         raw_nuc = [table_df.loc[2, "Value"], table_df.loc[5, "Value"]]
@@ -352,7 +438,9 @@ def register_callbacks(app, config=None):
             else:
                 nuc.append(value)
 
-        out_url = buildPartnerLink(id_a, id_b, cleft_thresh, nuc, config=config)
+        out_url = buildPartnerLink(
+            id_a, id_b, cleft_thresh, nuc, config=config, timestamp=timestamp
+        )
 
         return out_url
 
@@ -374,27 +462,51 @@ def register_callbacks(app, config=None):
         Output("summary_link_button", "href",),
         Input("post_submit_div", "children"),
         State("table", "data",),
+        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value"),
     )
-    def makeOutLinks(n_clicks, table_data):
+    def makeOutLinks(n_clicks, table_data, timestamp=None, cleft_thresh=50):
         """Create outbound app links using selected IDs.
-
         Keyword arguments:
         n_clicks -- unused dummy for trigger
         rows -- list of selected upstream row indices
         table_data -- dataframe of summary table data
+        timestamp -- string format datetime or unix utc timestamp
+        cleft_thresh -- cleft score threshold for synapses 
         """
 
         root_A, root_B = [table_data[0]["Value"], table_data[3]["Value"]]
 
-        print(root_A, root_B)
-        print(type(root_A), type(root_B))
+        # sets timestamp to current time if no input or converts string input to datetime #
+        if timestamp == None:
+            timestamp = getTime()
+        else:
+            timestamp = strToDatetime(timestamp)
 
         both_roots = root_A + "," + root_B
 
         # builds url using portUrl function #
-        con_url_A = portUrl(root_A, "connectivity", config)
-        con_url_B = portUrl(root_B, "connectivity", config)
-        sum_url = portUrl(both_roots, "summary", config)
+        con_url_A = portUrl(
+            root_A,
+            "connectivity",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
+        con_url_B = portUrl(
+            root_B,
+            "connectivity",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
+        sum_url = portUrl(
+            both_roots,
+            "summary",
+            str(cleft_thresh),
+            config=config,
+            timestamp=timestamp,
+        )
 
         # returns url string, alters button text, sends empty string for loader #
         return [con_url_A, con_url_B, sum_url]
