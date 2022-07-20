@@ -363,7 +363,7 @@ def rootListToDataFrame(root_list, config={}):
             "Merges",
             "Total Edits",
             "Editors",
-            "Cell Types",
+            "Cell Identification",
             "Current",
         ]
     )
@@ -411,7 +411,7 @@ def rootListToDataFrame(root_list, config={}):
             row_df["Merges"] = str(edits_dict[True])
             row_df["Total Edits"] = str(len(change_df))
             row_df["Editors"] = proofreaders
-            row_df["Cell Types"] = types
+            row_df["Cell Identification"] = types
             row_df["Current"] = freshness[0]
 
         # handles bad ids #
@@ -425,7 +425,7 @@ def rootListToDataFrame(root_list, config={}):
                     "Merges": "BAD ID",
                     "Total Edits": "BAD ID",
                     "Editors": "BAD ID",
-                    "Cell Types": "BAD ID",
+                    "Cell Identification": "BAD ID",
                     "Current": "BAD ID",
                 },
                 index=[0],
