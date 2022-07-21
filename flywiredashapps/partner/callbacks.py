@@ -452,8 +452,19 @@ def register_callbacks(app, config=None):
         prevent_initial_call=True,
     )
     def downloadSummary(n_clicks, table_data):
+        root_A, root_B = [str(table_data[0]["Value"]), str(table_data[3]["Value"])]
+        out_name = "partners__" + root_A + "_" + root_B + ".csv"
         summary_df = pd.DataFrame(table_data)
-        return dcc.send_data_frame(summary_df.to_csv, "partner_table.csv")
+        # converts coordinates from string to list while preserving non-nucleate #
+        if "[" in summary_df.loc[2, "Value"][0]:
+            summary_df.loc[2, "Value"] = [
+                int(x.strip()) for x in summary_df.loc[2, "Value"][0][1:-1].split(",")
+            ]
+        if "[" in summary_df.loc[5, "Value"][0]:
+            summary_df.loc[5, "Value"] = [
+                int(x.strip()) for x in summary_df.loc[5, "Value"][0][1:-1].split(",")
+            ]
+        return dcc.send_data_frame(summary_df.to_csv, out_name)
 
     # defines callback that generates connectivity app link  #
     @app.callback(
