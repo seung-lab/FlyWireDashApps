@@ -227,6 +227,16 @@ def register_callbacks(app, config=None):
     )
     def downloadSummary(n_clicks, table_data):
         summary_df = pd.DataFrame(table_data)
+        # converts nucleus coord strings to actual list while preserving non-list strings #
+        replacement_col = []
+        for x in summary_df["Nucleus Coordinates"]:
+            if "[" in x:
+                replacement_col.append([int(y.strip()) for y in x[1:-1].split(",")])
+            else:
+                replacement_col.append(x)
+
+        summary_df["Nucleus Coordinates"] = replacement_col
+
         return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
 
     # defines callback that generates neuroglancer link #
