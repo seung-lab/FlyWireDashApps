@@ -1,5 +1,4 @@
 # from https://gist.github.com/fzyzcjy/0322eebd54d4889b03e0c3ea9fd9e965
-import ast
 import re
 from typing import Dict, Callable, Any
 from urllib.parse import urlparse, parse_qsl, urlencode, quote
@@ -21,6 +20,13 @@ def create_component_kwargs(
     id_inner: str,
     **raw_kwargs,  # ** allows variable number of arguments to be passed#
 ) -> Dict[str, Any]:
+    """Make a component that automatically feeds itself into the url bar.
+
+    Keyword Arguments:
+    state -- empty dict to be filled with state information (dict)
+    id_inner -- the unique name of the component (str)
+    **raw_kwargs -- allows a variable number of arguments to be passed
+    """
     # noinspection PyDictCreation
     kwargs = {**raw_kwargs}
 
@@ -42,7 +48,11 @@ _ID_PARAM_SEP = "::"
 
 # function that converts string url to "state", a dict of dicts? #
 def _parse_url_to_state(href: str) -> State:
+    """Convert string url to state, a dict of dicts.
 
+    Keyword Arguments:
+    href -- url (str)
+    """
     # parses url string to 6-item named tuple #
     parse_result = urlparse(href)
 
@@ -81,6 +91,12 @@ def _parse_url_to_state(href: str) -> State:
 
 
 def _param_string(id_inner: str, property: str) -> str:
+    """If present, combine property and id into string.
+
+    Keyword Arguments:
+    id_inner -- unique name of component (str)
+    property -- name of property of component (str)
+    """
     return id_inner if property == "value" else id_inner + _ID_PARAM_SEP + property
 
 
@@ -89,16 +105,23 @@ _RE_SINGLE_QUOTED = re.compile("^'|'$")  # ORIGINAL#
 
 
 def _myrepr(o: str) -> str:
-    """Optional but chrome URL bar hates "'" """
+    """Remove unsafe characters from url string.
+
+    Keyword Arguments:
+    o -- url (str)
+    """
     # p.s. Pattern.sub(repl, string)
     out_val = _RE_SINGLE_QUOTED.sub("", repr(o))
     return out_val
-    # return _RE_SINGLE_QUOTED.sub('"', repr(o)) #ORIGINAL#
 
 
 # handles url interactivity #
 def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
-    """
+    """Set up url interctivity callbacks.
+
+    Keyword Arguments:
+    app -- the dash app itself
+    page_layout -- the thml/css layout of the app page
     NOTE ref: https://github.com/plotly/dash/issues/188
     """
     # returns layout based on url query fed as "state" object (dict of dicts) #
@@ -107,7 +130,11 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
         Output("page-layout", "children"), inputs=[Input("url", "href")],
     )
     def page_load(href: str):
+        """Create layout using url query.
 
+        Keyword Arguments:
+        href -- url (str)
+        """
         # if there's no url, returns a blank layout, not sure why this is here #
         if not href:
             return []
@@ -133,7 +160,11 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
         prevent_initial_call=True,
     )
     def update_url_state(values):
-        """Updates URL from component values."""
+        """Update URL from component values.
+
+        Keyword Arguments:
+        values -- a list of the values of any components tagged as url helpers
+        """
         state = {}
         # https://dash.plotly.com/pattern-matching-callbacks
         inputs = dash.callback_context.inputs_list[0]
@@ -148,11 +179,11 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
             except:
                 pass
             try:
-                input["value"] = input["value"].replace('"','')
+                input["value"] = input["value"].replace('"', "")
             except:
                 pass
             try:
-                input["value"] = input["value"].replace("'","")
+                input["value"] = input["value"].replace("'", "")
             except:
                 pass
             try:
@@ -161,8 +192,9 @@ def setup(app: dash.Dash, page_layout: Callable[[State], Any]):
                 )
             except:
                 pass
+        # encodes state dict into url #
         params = urlencode(state, safe="%/:?~#+!$,;'@()*[]", quote_via=quote)
-        # params = urlencode(state, safe="%/:?~#+!$,;'@()*[]\"", quote_via=quote) #ORIGINAL#
+        # prints values and parameters #
         print(f"update_url_state values={values} params={params}")
         return f"?{params}"
 

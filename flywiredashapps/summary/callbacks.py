@@ -7,6 +7,14 @@ from .utils import *
 
 
 def register_callbacks(app, config=None):
+    """Set up callbacks to be passed to app.
+
+    Keyword Arguments:
+    app -- the app itself
+    config -- dictionary of config settings (dict, default None)
+    """
+
+    # defines callback that generates main table #
     @app.callback(
         Output("post_submit_div", "children"),
         Output("table", "columns"),
@@ -22,201 +30,209 @@ def register_callbacks(app, config=None):
         """Update app based on input.
         
         Keyword arguments:
-        n_clicks -- int number of times the submit button has been pressed
-        id_list -- str formatted list of roots, nucs, and/or coords for input
+        n_clicks -- unused trigger that tracks number of times the submit button has been pressed
+        id_list -- list of roots, nucs, and/or coords for input (str)
         """
-        if id_list != None:
 
-            start_time = time.time()
+        # prevents firing if no ids are submitted #
+        if id_list == None:
+            raise PreventUpdate
 
-            # removes quotes from input #
-            try:
-                id_list = str(id_list).replace('"', "")
-            except:
-                pass
-            try:
-                id_list = str(id_list).replace("'", "")
-            except:
-                pass
+        # records start time #
+        start_time = time.time()
 
-            post_div = [
-                # defines summary downloader #
-                html.Div(
-                    [
-                        dbc.Button(
-                            "Download Summary Table as CSV File",
-                            id="summary_download_button",
-                            style={
-                                "width": "420px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "5px",
-                            },
+        # removes quotes from input #
+        try:
+            id_list = str(id_list).replace('"', "")
+        except:
+            pass
+        try:
+            id_list = str(id_list).replace("'", "")
+        except:
+            pass
+
+        # defines div containing post-submission content #
+        post_div = [
+            html.Div(
+                [
+                    # defines summary download button #
+                    dbc.Button(
+                        "Download Summary Table as CSV File",
+                        id="summary_download_button",
+                        color="success",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "5px",
+                        },
+                    ),
+                    # defines NG link button loader #
+                    html.Div(
+                        dcc.Loading(id="link_loader", type="default", children=""),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                    # defines NG link generation button #
+                    dbc.Button(
+                        "Generate NG Link Using Selected Root IDs",
+                        id="link_button",
+                        n_clicks=0,
+                        target="_blank",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines Connectivity App link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="connectivity_link_loader", type="default", children="",
                         ),
-                        # defines NG link button loader #
-                        html.Div(
-                            dcc.Loading(id="link_loader", type="default", children=""),
-                            style={
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "width": "1000px",
-                            },
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                    # defines Connectivity App link generation button #
+                    dbc.Button(
+                        "Select Neuron to Port to Connectivity App",
+                        id="connectivity_link_button",
+                        n_clicks=0,
+                        target="_blank",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    # defines Partner App link button loader #
+                    html.Div(
+                        dcc.Loading(
+                            id="partner_link_loader", type="default", children="",
                         ),
-                        # defines NG link generation button #
-                        dbc.Button(
-                            "Generate NG Link Using Selected Root IDs",
-                            id="link_button",
-                            n_clicks=0,
-                            target="_blank",
-                            style={
-                                "margin-top": "5px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-bottom": "5px",
-                                "width": "420px",
-                                "vertical-align": "top",
-                            },
-                        ),
-                        # defines Connectivity App link button loader #
-                        html.Div(
-                            dcc.Loading(
-                                id="connectivity_link_loader",
-                                type="default",
-                                children="",
-                            ),
-                            style={
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "width": "1000px",
-                            },
-                        ),
-                        # defines Connectivity App link generation button #
-                        dbc.Button(
-                            "Select Neuron to Port to Connectivity App",
-                            id="connectivity_link_button",
-                            n_clicks=0,
-                            target="_blank",
-                            style={
-                                "margin-top": "5px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-bottom": "5px",
-                                "width": "420px",
-                                "vertical-align": "top",
-                            },
-                        ),
-                        # defines Partner App link button loader #
-                        html.Div(
-                            dcc.Loading(
-                                id="partner_link_loader", type="default", children="",
-                            ),
-                            style={
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "width": "1000px",
-                            },
-                        ),
-                        # defines Partner App link generation button #
-                        dbc.Button(
-                            "Select 2 Neurons to Port to Partner App",
-                            id="partner_link_button",
-                            n_clicks=0,
-                            target="_blank",
-                            style={
-                                "margin-top": "5px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-bottom": "5px",
-                                "width": "420px",
-                                "vertical-align": "top",
-                            },
-                        ),
-                        html.Br(),
-                        # defines button to clear table selections #
-                        dbc.Button(
-                            "Clear Selections",
-                            id="clear_button",
-                            n_clicks=0,
-                            color="danger",
-                            style={
-                                "width": "420px",
-                                "margin-right": "5px",
-                                "margin-left": "5px",
-                                "margin-top": "5px",
-                                "margin-bottom": "25px",
-                                "vertical-align": "top",
-                            },
-                        ),
-                    ]
-                ),
-                dcc.Download(id="summary_download"),
+                        style={
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "width": "1000px",
+                        },
+                    ),
+                    # defines Partner App link generation button #
+                    dbc.Button(
+                        "Select 2 Neurons to Port to Partner App",
+                        id="partner_link_button",
+                        n_clicks=0,
+                        target="_blank",
+                        style={
+                            "margin-top": "5px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-bottom": "5px",
+                            "width": "420px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                    html.Br(),
+                    # defines button to clear table selections #
+                    dbc.Button(
+                        "Clear Selections",
+                        id="clear_button",
+                        n_clicks=0,
+                        color="danger",
+                        style={
+                            "width": "420px",
+                            "margin-right": "5px",
+                            "margin-left": "5px",
+                            "margin-top": "5px",
+                            "margin-bottom": "25px",
+                            "vertical-align": "top",
+                        },
+                    ),
+                ]
+            ),
+            # defines summary downloader #
+            dcc.Download(id="summary_download"),
+        ]
+
+        # generates root list from input list #
+        root_list = inputToRootList(id_list, config)
+
+        # enforces 20-item limit on input
+        if len(root_list) > 20:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                "Please limit each query to a maximum of 20 items.",
+                1,
+                "",
+            ]
+        else:
+            # removes duplicates #
+            root_set = set(root_list)
+            output_df = rootListToDataFrame(list(root_set), config)
+
+            # creates column list based on dataframe columns #
+            column_list = [{"name": i, "id": i} for i in output_df.columns]
+
+            # converts df to dict #
+            data_dict = output_df.to_dict("records")
+
+            # logs end time and calculates run time #
+            end_time = time.time()
+            elapsed_time = str(round(end_time - start_time))
+
+            # builds message using time information #
+            message_text = "Query completed in " + elapsed_time + " seconds."
+            mess_rows = 1
+
+            # adds message if any duplicates were removed #
+            dupes = len(root_list) - len(root_set)
+            if dupes == 1:
+                message_text = (
+                    message_text + " " + str(dupes) + " duplicate entry removed."
+                )
+                mess_rows = 2
+            if dupes > 1:
+                message_text = (
+                    message_text + " " + str(dupes) + " duplicate entries removed."
+                )
+                mess_rows = 2
+
+            # creates list of dicts for each row in data_dicts #
+            # each dict has a single id-key pair of the column name paired with another dict #
+            # each of these dicts is {"value" : string value of that row, "type": "markdown"} #
+            # this allows for markdown syntax to make the ids in the table into refeeder links #
+            tooltip_data = [
+                {
+                    column: {"value": str(value), "type": "markdown"}
+                    for column, value in row.items()
+                }
+                for row in data_dict
             ]
 
-            # generates root list from input list #
-            root_list = inputToRootList(id_list, config)
-
-            # enforces 20-item limit on input
-            if len(root_list) > 20:
-                return [
-                    no_update,
-                    no_update,
-                    no_update,
-                    no_update,
-                    "Please limit each query to a maximum of 20 items.",
-                    1,
-                    "",
-                ]
-            else:
-
-                # removes duplicates #
-                root_set = set(root_list)
-                output_df = rootListToDataFrame(list(root_set), config)
-
-                # creates column list based on dataframe columns #
-                column_list = [{"name": i, "id": i} for i in output_df.columns]
-
-                data_dict = output_df.to_dict("records")
-
-                end_time = time.time()
-                elapsed_time = str(round(end_time - start_time))
-
-                # relays time information #
-                message_text = "Query completed in " + elapsed_time + " seconds."
-                mess_rows = 1
-
-                # adds message if any duplicates were removed #
-                dupes = len(root_list) - len(root_set)
-                if dupes == 1:
-                    message_text = (
-                        message_text + " " + str(dupes) + " duplicate entry removed."
-                    )
-                    mess_rows = 2
-                if dupes > 1:
-                    message_text = (
-                        message_text + " " + str(dupes) + " duplicate entries removed."
-                    )
-                    mess_rows = 2
-
-                tooltip_data = [
-                    {
-                        column: {"value": str(value), "type": "markdown"}
-                        for column, value in row.items()
-                    }
-                    for row in data_dict
-                ]
-
-                return [
-                    post_div,
-                    column_list,
-                    data_dict,
-                    tooltip_data,
-                    message_text,
-                    mess_rows,
-                    "",
-                ]
-        else:
-            raise PreventUpdate
+            return [
+                post_div,
+                column_list,
+                data_dict,
+                tooltip_data,
+                message_text,
+                mess_rows,
+                "",
+            ]
 
     # defines callback to download summary table as csv on button press #
     @app.callback(
@@ -226,7 +242,16 @@ def register_callbacks(app, config=None):
         prevent_initial_call=True,
     )
     def downloadSummary(n_clicks, table_data):
+        """Download table as csv file.
+
+        Keyword Arguments:
+        n_clicks -- unused trigger that counts how many times the download button has been pressed
+        table_data -- table data
+        """
+        # convert table data to dataframe #
         summary_df = pd.DataFrame(table_data)
+
+        # convert dataframe to csv and send to user #
         return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
 
     # defines callback that generates neuroglancer link #
@@ -241,9 +266,9 @@ def register_callbacks(app, config=None):
         """Create neuroglancer link using selected IDs.
 
         Keyword arguments:
-        rows -- list of selected upstream row indices
-        table_data -- dataframe of summary table data
-        cb -- bool to determine colorblind option (default False)
+        rows -- selected upstream row indices (list)
+        table_data -- summary table data (dataframe)
+        cb -- colorblind option (bool, default False)
         """
 
         # generates root list using table data and selected rows #
@@ -253,6 +278,7 @@ def register_callbacks(app, config=None):
         bad_mask = [table_data[x]["Nuc ID"] != "BAD ID" for x in rows]
         root_list = list(compress(root_list, bad_mask))
 
+        # handles situations where all ids are removed by bad_mask #
         if root_list == []:
             return ["", ""]
 
@@ -293,7 +319,7 @@ def register_callbacks(app, config=None):
         """Clear table selections.
 
         Keyword arguments:
-        n_clicks -- tracks clicks for clear button
+        n_clicks -- unused trigger that tracks clicks for clear button
         """
         return [
             None,
@@ -313,8 +339,8 @@ def register_callbacks(app, config=None):
         """Create connectivity app link using selected IDs.
 
         Keyword arguments:
-        rows -- list of selected upstream row indices
-        table_data -- dataframe of summary table data
+        rows -- selected upstream row indices (list)
+        table_data -- summary table data
         """
 
         # generates root list using table data and selected rows #
@@ -348,8 +374,8 @@ def register_callbacks(app, config=None):
         """Create partner app link using selected IDs.
 
         Keyword arguments:
-        rows -- list of selected upstream row indices
-        table_data -- dataframe of summary table data
+        rows -- selected upstream row indices (list)
+        table_data -- summary table data
         """
 
         # generates root list using table data and selected rows #
@@ -369,26 +395,6 @@ def register_callbacks(app, config=None):
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
-
-    # # defines callback that throws error message if link button is clicked with no selections #
-    # @app.callback(
-    #     Output("message_text", "value",),
-    #     Input("link_button", "n_clicks"),
-    #     State("table", "selected_rows",),
-    #     prevent_initial_call=True,
-    # )
-    # def noSelError(n_clicks, rows):
-    #     """Throw error message if link button is clicked with no selections.
-
-    #     Keyword arguments:
-    #     n_clicks -- number of times link button has been pressed
-    #     rows -- list of selected upstream row indices
-    #     """
-
-    #     if rows == []:
-    #         return "No rows selected, please select one or more rows from the table using their checkboxes."
-    #     else:
-    #         return no_update
 
     pass
 

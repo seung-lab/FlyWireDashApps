@@ -7,23 +7,23 @@ import plotly.graph_objects as go
 import json
 import datetime
 import calendar
-import time
 import datetime
 from nglui.statebuilder import *
-from pytz import NonExistentTimeError
 from ..common import lookup_utilities
 
 
 def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None):
-    """Generate NG link.
+    """Generate neuroglancer link with all synapses associated with queried neuron.
 
     Keyword arguments:
-    query_id -- single queried root id as list of str
-    cleft_thresh -- cleft score threshold to drop synapses as float
-    nucleus -- x,y,z coordinates of query nucleus as list of ints
-    config -- dictionary of config settings (default {})
+    query_id -- single queried root id (listed str)
+    cleft_thresh -- cleft score threshold to drop synapses (float)
+    nucleus -- x,y,z coords of query nucleus (listed str)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp as datetime or unix (str)
     """
 
+    # converts string timestamp to datetime object if present, otherwise sets to current time #
     if timestamp == None:
         timestamp == datetime.datetime.utcnow()
     else:
@@ -147,6 +147,7 @@ def buildLink(
     timestamp=None,
 ):
     """Generate NG link.
+
     Keyword arguments:
     query_id -- single queried root id as list of int
     up_id -- root ids of upstream partners as list of ints
@@ -341,6 +342,7 @@ def checkFreshness(root_id, config={}, timestamp=None):
 
 def coordsToRoot(coords, config={}, timestamp=None):
     """Convert coordinates in 4,4,40 nm resolution to root id.
+
     Keyword arguments:
     coords -- list of x,y,z coordinates in 4,4,40 nm resolution
     config -- dictionary of config settings (default {})
@@ -382,8 +384,18 @@ def coordsToRoot(coords, config={}, timestamp=None):
     return root_result
 
 
+def datetimeToUnix(stamp):
+    """Convert datetime object to unix timestamp.
+    
+    Keyword Arguments:
+    stamp -- datetime object timestamp
+    """
+    return calendar.timegm(stamp.utctimetuple())
+
+
 def getNuc(root_id, config={}, timestamp=None):
     """Build a dataframe of nucleus table data in string format.
+
     Keyword arguments:
     root_id -- root or nucleus id formatted as int
     config -- dictionary of config settings (default {})
@@ -442,6 +454,7 @@ def getSyn(
     timestamp=None,
 ):
     """Create a cached table of synapses for a given root id.
+
     Keyword arguments:
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
@@ -453,9 +466,6 @@ def getSyn(
 
     # sets client #
     client = lookup_utilities.make_client(datastack_name, server_address)
-
-    # # gets current materialization version #
-    # mat_vers = max(client.materialize.get_versions())
 
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
@@ -488,6 +498,7 @@ def getSyn(
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
+        # TEMPORARILY UNUSED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
@@ -516,19 +527,6 @@ def getSyn(
             suffixes=["syn", "np"],
         )
     else:
-        # creates df that includes neuropil regions using root id #
-        # syn_df = client.materialize.join_query(
-        #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
-        #     filter_in_dict={
-        #         "synapses_nt_v1": {
-        #             "pre_pt_root_id": [pre_root],
-        #             "post_pt_root_id": [post_root],
-        #         }
-        #     },
-        #     suffixes=["syn", "nuc"],
-        #     # materialization_version=mat_vers,
-        #     timestamp=timestamp,
-        # )
         raw_syn_df = client.materialize.query_table(
             "synapses_nt_v1",
             filter_in_dict={
@@ -553,15 +551,13 @@ def getSyn(
             suffixes=["syn", "np"],
         )
 
-    # # converts cleft scores from str to int #
-    # if type(syn_df["cleft_score"]) == str:
-    #     syn_df = syn_df.astype({"cleft_score": "int"}).dtypes
-
+    # sets the raw number of synapses equal to the length of the df #
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
     syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
 
+    # sets the number of synapses after removing those that fail the cleft score filter #
     cleft_num = len(syn_df)
 
     # removes autapses #
@@ -569,14 +565,17 @@ def getSyn(
         drop=True
     )
 
+    # sets the number of synapses after removing autapses #
     aut_num = len(syn_df)
 
     # removes 0-roots #
     syn_df = syn_df[syn_df["pre_pt_root_id"] != 0].reset_index(drop=True)
     syn_df = syn_df[syn_df["post_pt_root_id"] != 0].reset_index(drop=True)
 
+    # sets the number of synapses after removing zero-roots #
     zeroot_num = len(syn_df)
 
+    # constructs output message by calculating how many synapses were removed at each filter step #
     output_message = (
         str(raw_num - cleft_num)
         + " synapses below threshold, "
@@ -588,6 +587,7 @@ def getSyn(
         + " bad synapses culled. \n"
     )
 
+    # adds message if query was capped by server #
     if raw_num == 200000:
         output_message = "!Query capped at 200K entires!\n" + output_message
 
@@ -603,6 +603,7 @@ def getSynNoCache(
     timestamp=None,
 ):
     """Create an uncached table of synapses for a given root id.
+
     Keyword arguments:
     pre_root -- single int-format root id number for upstream neuron (default 0)
     post_root -- single int-format root id number for downstream neuron (default 0)
@@ -615,11 +616,9 @@ def getSynNoCache(
     # sets client #
     client = lookup_utilities.make_client(datastack_name, server_address)
 
-    # # gets current materialization version #
-    # mat_vers = max(client.materialize.get_versions())
-
     if post_root == 0:
         # creates df that includes neuropil regions using root id #
+        # CURRENTLY UNUSED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={"synapses_nt_v1": {"pre_pt_root_id": [pre_root]}},
@@ -649,6 +648,7 @@ def getSynNoCache(
         )
     elif pre_root == 0:
         # creates df that includes neuropil regions using root id #
+        # CURRENTLY UNUSED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={"synapses_nt_v1": {"post_pt_root_id": [post_root]}},
@@ -678,6 +678,7 @@ def getSynNoCache(
         )
     else:
         # creates df that includes neuropil regions using root id #
+        # CURRENTLY UNUSED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
         #     filter_in_dict={
@@ -714,11 +715,13 @@ def getSynNoCache(
             suffixes=["syn", "np"],
         )
 
+    # sets raw number of synapses by counting length of df #
     raw_num = len(syn_df)
 
     # removes synapses below cleft threshold #
     syn_df = syn_df[syn_df["cleft_score"] >= float(cleft_thresh)].reset_index(drop=True)
 
+    # sets number of synapses after removing those that fail the cleft score filter #
     cleft_num = len(syn_df)
 
     # removes autapses #
@@ -726,14 +729,17 @@ def getSynNoCache(
         drop=True
     )
 
+    # sets number of synapses elft after removing autapses #
     aut_num = len(syn_df)
 
     # removes 0-roots #
     syn_df = syn_df[syn_df["pre_pt_root_id"] != 0].reset_index(drop=True)
     syn_df = syn_df[syn_df["post_pt_root_id"] != 0].reset_index(drop=True)
 
+    # sets number of synapses elft after removing zero-roots #
     zeroot_num = len(syn_df)
 
+    # sets output message by calculating number of synapses removed at each step #
     output_message = (
         str(raw_num - cleft_num)
         + " synapses below threshold, "
@@ -745,6 +751,7 @@ def getSynNoCache(
         + " bad synapses culled. \n"
     )
 
+    # adds message warning user if query was capped by server #
     if raw_num == 200000:
         output_message = "!Query capped at 200K entires!\n" + output_message
 
@@ -754,7 +761,7 @@ def getSynNoCache(
 def getTime():
     """Get current time in datetime.datetime format.
     """
-    return datetime.datetime.utcnow()
+    return datetime.datetime.utcnow().replace(microsecond=0)
 
 
 def getUnixTime():
@@ -765,10 +772,11 @@ def getUnixTime():
 
 def idConvert(id_val, config, timestamp=None):
     """Identify id type and convert to root if necessary. Return 0 on bad id.
+
     Keyword arguments:
-    id -- root id, nuc id, or xyz coords
-    config -- dictionary of config settings
-    timestamp -- datetime format utc timestamp
+    id -- root id, nuc id, or xyz coords (str)
+    config -- config settings (dict)
+    timestamp -- utc timestamp (datetime object, default None)
     """
     # converts coordinates or list-format input into non-listed int
     if type(id_val) == list:
@@ -777,6 +785,7 @@ def idConvert(id_val, config, timestamp=None):
         else:
             id_val = int(id_val[0])
 
+    # converts string and float formatted ids to ints #
     if (type(id_val) == str) or (type(id_val) == float):
         id_val = int(id_val)
 
@@ -784,6 +793,7 @@ def idConvert(id_val, config, timestamp=None):
     if len(str(id_val)) == 7:
         id_val = nucToRoot(id_val, config=config, timestamp=timestamp)
 
+    # returns 0 if the length of the id isn't 18 digits #
     if len(str(id_val)) == 18:
         return id_val
     else:
@@ -794,6 +804,7 @@ def makePartnerDataFrame(
     root_id, cleft_thresh, upstream=False, config={}, timestamp=None
 ):
     """Make dataframe with summary info.
+
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     cleft_thresh -- float-format cleft score threshold
@@ -880,12 +891,13 @@ def makePartnerDataFrame(
 
 def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     """Create pie chart of relative synapse neuropils.
+
     Keyword arguments:
-    root_id -- single int-format root id number
-    cleft_thresh -- float-format cleft score threshold to drop synapses
-    incoming -- boolean to specify incoming or outgoing synapses (default False)
+    root_id -- root id number (int)
+    cleft_thresh -- cleft score threshold to drop synapses (float)
+    incoming -- incoming or outgoing synapses (bool, default False)
     config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    timestamp -- utc timestamp (datetime object, default None)
     """
 
     # sets variable for incoming or outgoing synapses
@@ -913,6 +925,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     # counts number of synapses to use as denominator in ratios #
     num_syn = len(query_df)
 
+    # make dataframe with counts of each category of neuropil #
     ratios_df = query_df.groupby(["neuropil"], as_index=False).count()
 
     # drops all nonessential columns and renames those that remain #
@@ -925,7 +938,6 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     # sorts df from highest to lowest and fixes index #
     ratios_df = ratios_df.sort_values(by=["Ratio"], ascending=False)
     ratios_df.reset_index(inplace=True)
-    # region_df = region_df.rename(columns = {'index':'Neuropil'})
 
     # consolidates all regions less than 1% into 'Other' #
     ratios_df.loc[ratios_df["Ratio"] < 0.01, "Neuropil"] = "Other"
@@ -933,6 +945,7 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     # renames 'None' as 'Unknown' #
     ratios_df.loc[ratios_df["Neuropil"] == "None", "Neuropil"] = "Unknown"
 
+    # sets color coding for neuropil regions #
     np_color_dict = {
         # SNP, pink #
         "SLP_L": "ff007f",
@@ -1050,11 +1063,12 @@ def makePie(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
 
 def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
     """Make dataframe with summary info.
+
     Keyword arguments:
-    root_id -- 18-digit int-format root id number
-    cleft_thresh -- float-format cleft score threshold
-    config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    root_id -- 18-digit root id number (int)
+    cleft_thresh -- cleft score threshold (float)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp (datetime object, default None)
     """
 
     # runs up and downstream queries and returns list with [df,message] #
@@ -1131,12 +1145,13 @@ def makeSummaryDataFrame(root_id, cleft_thresh, config={}, timestamp=None):
 
 def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None):
     """Build violin plots of up- and downstream neurotransmitter values.
+
     Keyword arguments:
-    root_id -- single int-format root id number
-    cleft_thresh -- float-format cleft score threshold to drop synapses
-    incoming -- boolean to specify incoming or outgoing synapses (default False)
-    config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    root_id -- root id number (int)
+    cleft_thresh -- cleft score threshold to drop synapses (float)
+    incoming -- incoming or outgoing synapses (bool, default False)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp (datetime object, default None)
     """
 
     # sets variable for incoming or outgoing synapses
@@ -1189,10 +1204,29 @@ def makeViolin(root_id, cleft_thresh, incoming=False, config={}, timestamp=None)
     return fig
 
 
+def markdownToInt(root_list):
+    """Convert markdown synatx back into int root ids.
+    
+    Keyword Arguments:
+    root_list -- list of root ids, may be mixed markdown and non-markdown
+    """
+
+    # converts markdown back into normal root id #
+    output_list = []
+    for x in root_list:
+        if len(str(x)) > 18:
+            output_list.append(int(x[1:19]))
+        else:
+            output_list.append(int(x))
+
+    return output_list
+
+
 def nmToNG(coords):
     """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
+
     Keyword arguments:
-    coords -- list of x,y,z coordinates as ints in 1,1,1 nm resolution
+    coords -- x,y,z coordinates in 1,1,1 nm resolution (list of ints)
     """
     coords[0] /= 4
     coords[1] /= 4
@@ -1203,39 +1237,44 @@ def nmToNG(coords):
 
 def nucToRoot(nuc_id, config={}, timestamp=None):
     """Convert nucleus id to root id.
+
     Keyword arguments:
-    nuc_id -- 7-digit nucleus id as int
-    config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    nuc_id -- 7-digit nucleus id (int)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp (datetime object, default None)
     """
+
+    # sets client using config #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
 
     # mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1",
-        filter_in_dict={"id": [nuc_id]},
-        # materialization_version=mat_vers,
-        timestamp=timestamp,
+        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, timestamp=timestamp,
     )
+
+    # if no root id is found, return 0 #
     try:
         root_id = int(nuc_df.loc[0, "pt_root_id"])
     except:
         root_id = 0
+
     return root_id
 
 
 def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
     """Convert root ids into outbound url based on app choice.
+
     Keyword arguments:
-    input_ids -- string of selected 18-digit root ids separated by commas
-    app choice -- string choice of which app to send the inputs to
-    config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
-    cleft_thresh -- string format cleft threshold for synapses
+    input_ids -- selected 18-digit root ids separated by commas (str)
+    app choice -- choice of which app to send the inputs to (str)
+    cleft_thresh -- cleft threshold for synapses (str)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp (datetime object, default None)
     """
 
+    # behavior for summary app porting #
     if app_choice == "summary":
         base = config.get("sum_app_base_url", None)
         input_ids = input_ids.replace("'", "").replace(" ", "")
@@ -1245,6 +1284,7 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
             + "&timestamp_field="
             + str(timestamp).replace(" ", "")
         )
+    # behavior for partner app porting #
     elif app_choice == "partner":
         base = config.get("part_app_base_url", None)
         input_list = input_ids.split(",")
@@ -1261,23 +1301,32 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
             + str(timestamp).replace(" ", "")
         )
 
+    # constructs url using base address and constructed query string #
     out_url = base + query
-    return out_url
 
+    return out_url
 
 
 def refeedLink(root_id, config={}):
     """Convert root id into markdown-format refeed link.
 
     Keyword arguments:
-    root_id -- string-format 18-digit root id
-    config -- dictionary of config settings (default {})
+    root_id -- 18-digit root id (str)
+    config -- config settings (dict, default {})
     """
 
+    # sets base to base url found in config dict #
     base = config.get("con_app_base_url", None)
+
+    # constructs query based on root id #
     query = "?input_field=" + root_id + "&cleft_thresh_field=50"
+
+    # stitches query to base url #
     out_url = base + query
+
+    # adds markdown syntax to turn string into link #
     markdown_url = "[" + root_id + "](" + out_url + ")"
+
     return markdown_url
 
 
@@ -1286,27 +1335,21 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
     """Convert list of root ids to one-column df of nucleus coordinates.
     
     Keyword Arguments:
-    roots -- list of int-format root ids
-    config -- dictionary of config settings (default {})
-    timestamp -- datetime format utc timestamp
+    roots -- root ids (list of markdown format strings)
+    config -- config settings (dict, default {})
+    timestamp -- utc timestamp (datetime object, default None)
     """
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
 
-    # gets current materialization version #
-    # mat_vers = max(client.materialize.get_versions())
-
     # drops 0-roots #
     roots = [int(x) for x in roots if int(x) != 0]
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1",
-        filter_in_dict={"pt_root_id": roots},
-        # materialization_version=mat_vers,
-        timestamp=timestamp,
+        "nuclei_v1", filter_in_dict={"pt_root_id": roots}, timestamp=timestamp,
     )
 
     # converts nucleus coordinates from nm to 4x4x40 resolution #
@@ -1318,10 +1361,10 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
 
 
 def strToDatetime(string_timestamp):
-    """Convert string timestamp to dateime.datetime.
+    """Convert string timestamp to datetime object.
     
     Keyword Arguments:
-    string_timestamp -- string format timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC
+    string_timestamp -- timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC (str)
     """
 
     # converts if unix #
@@ -1348,18 +1391,10 @@ def strToDatetime(string_timestamp):
 
 
 def unixToDatetime(stamp):
-    """Convert unix format timestamp to datetime.datetime.
+    """Convert unix timestamp to datetime object.
     
     Keyword Arguments:
-    stamp -- unix format timestamp
+    stamp -- unix timestamp
     """
     return datetime.datetime.fromtimestamp(stamp)
 
-
-def datetimeToUnix(stamp):
-    """Convert datetime.datetime format timestamp to unix.
-    
-    Keyword Arguments:
-    stamp -- datetime.datetime format timestamp
-    """
-    return calendar.timegm(stamp.utctimetuple())
