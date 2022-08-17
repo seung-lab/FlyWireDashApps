@@ -159,5 +159,17 @@ def page_layout(state={}):
                 dcc.Loading(id="submit_loader", type="default", children=""),
                 style={"width": "1000px",},
             ),
+            html.Div(id="post_submit_div"),
         ]
     )
+
+    return layout
+
+
+def app_layout():
+    """Return current layout."""
+    # https://dash.plotly.com/urls "Dynamically Create a Layout for Multi-Page App Validation"
+    if flask.has_request_context():  # for real
+        return url_bar_and_content_div
+    # validation only
+    return html.Div([url_bar_and_content_div, *page_layout()])

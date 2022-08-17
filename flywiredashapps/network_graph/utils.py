@@ -1,9 +1,46 @@
 from ..common import lookup_utilities
 import pandas as pd
 
+# defines function to convert raw connectivity information from dict of dicts to network graph readable format #
+def dictToElements(input_data):
+    """Convert raw connectivity information into network graph readable format.
+    
+    Keyword Arguments:
+    input_data -- raw connectivity data (dict of dicts where first key is upstream, second key is downstream, value is number of connections e.g. {'id1':{'id2':65,'id3':0},'id2'{'id1':4,'id3':57},'id3'{'id1':0,'id2':5},})
+    """
+    # makes blank lists to populate with nodes and edges #
+    nodes = []
+    edges = []
 
-def getSyn(root_list, cleft_thresh, config={}, timestamp=None):
-    """Get number of synapses between each pair of ids.
+    # for each key in the input dict... #
+    for x in list(input_data.keys()):
+        # add that key as a node #
+        nodes.append({"data": {"id": str(x), "label": str(x)}})
+        # for each key in the input dict other than the x key... #
+        for y in list(input_data[x].keys()):
+            # ...not including edges with 0 connections... #
+            if input_data[x][y] != 0:
+                # add the source, target, and weight of the connection as an edge #
+                edges.append(
+                    {
+                        "data": {
+                            "source": str(x),
+                            "target": str(y),
+                            "weight": input_data[x][y],
+                        }
+                    }
+                )
+            else:
+                pass
+
+    # combine the lists to feed into the graph constructor #
+    directed_weighted_elements = nodes + edges
+
+    return directed_weighted_elements
+
+
+def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
+    """Get number of synapses between each pair of ids, return as dict-of-dicts.
     
     Keyword Arguments:
     root_list -- ids to check (list of strings or ints)
@@ -54,6 +91,8 @@ def getSyn(root_list, cleft_thresh, config={}, timestamp=None):
         + str(raw_num - aut_num)
         + " bad synapses culled. \n"
     )
+
+    print(syn_df)
 
     # creates list of all pre-post pairs as combined strings #
     count_list = [
