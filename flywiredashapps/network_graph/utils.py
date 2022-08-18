@@ -92,8 +92,6 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
         + " bad synapses culled. \n"
     )
 
-    print(syn_df)
-
     # creates list of all pre-post pairs as combined strings #
     count_list = [
         str(syn_df.loc[x, "pre_pt_root_id"]) + str(syn_df.loc[x, "post_pt_root_id"])
