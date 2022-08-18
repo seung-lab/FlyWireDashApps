@@ -97,7 +97,7 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
     # creates list of all pre-post pairs as combined strings #
     count_list = [
         str(syn_df.loc[x, "pre_pt_root_id"]) + str(syn_df.loc[x, "post_pt_root_id"])
-        for x in syn_df
+        for x in syn_df.index
     ]
 
     # creates nested dict where first keys are all root IDs (keyXs), all values are dicts #

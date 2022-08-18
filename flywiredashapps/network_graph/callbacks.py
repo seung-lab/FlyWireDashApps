@@ -66,7 +66,7 @@ def register_callbacks(app, config=None):
                 # sets initial positions of nodes using templates #
                 layout={"name": "circle"},
                 # styles plot width and height #
-                style={"width": "500px", "height": "500px",},
+                style={"width": "1000px", "height": "500px",},
                 # sets elements using input data #
                 elements=graph_readable_elements,
                 # styles graph #
@@ -82,6 +82,9 @@ def register_callbacks(app, config=None):
                             "target-arrow-shape": "triangle",
                         },
                     },
+                    {"selector": "[weight > 10]", "style": {"line-color": "yellow"}},
+                    {"selector": "[weight > 50]", "style": {"line-color": "orange"}},
+                    {"selector": "[weight > 100]", "style": {"line-color": "red"}},
                 ],
             ),
         ]
