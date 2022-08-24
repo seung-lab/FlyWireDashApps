@@ -19,14 +19,15 @@ def dictToElements(input_data):
         # for each key in the input dict other than the x key... #
         for y in list(input_data[x].keys()):
             # ...not including edges with 0 connections... #
-            if input_data[x][y] != 0:
+            if input_data[x][y]["connections"] != 0:
                 # add the source, target, and weight of the connection as an edge #
                 edges.append(
                     {
                         "data": {
                             "source": str(x),
                             "target": str(y),
-                            "weight": input_data[x][y],
+                            "weight": input_data[x][y]["connections"],
+                            "nt": input_data[x][y]["nt"],
                         }
                     }
                 )
@@ -102,9 +103,39 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
     # the keys of these dicts are all the root ids (keyYs) except keyX (no self-pairing) #
     # the values for these dicts are the number of times their keyX-keyY pair occurs in count_list #
     outgoing_connections = {
-        str(x): {str(y): count_list.count(str(x) + str(y)) for y in root_list if y != x}
+        str(x): {
+            str(y): {"connections": count_list.count(str(x) + str(y))}
+            for y in root_list
+            if y != x
+        }
         for x in root_list
     }
+
+    # makes a new nt df from the nt columns of syn df #
+    nt_df = syn_df[["gaba", "ach", "glut", "oct", "ser", "da"]].copy()
+
+    # gets the max value in each row and assigns these to a df column #
+    nt_df["max"] = nt_df.idxmax(axis=1)
+
+    # adds the pre and post id columns #
+    nt_df["pre"] = syn_df["pre_pt_root_id"]
+    nt_df["post"] = syn_df["post_pt_root_id"]
+
+    # sets neurotransmitter info #
+    for x in outgoing_connections:
+        for y in outgoing_connections[x]:
+            # masks df to only show rows with this directional pair #
+            pair_df = nt_df[(nt_df.pre == int(x)) & (nt_df.post == int(y))]
+            # if there are any matches... #
+            if len(pair_df) > 0:
+                # ...counts the most common max neurotransmitter and sets as nt value #
+                outgoing_connections[x][y]["nt"] = pair_df["max"].mode()[0]
+            # if there aren't any matches... #
+            else:
+                # ...sets the nt value to None #
+                outgoing_connections[x][y]["nt"] = None
+
+    print(outgoing_connections)
 
     return [outgoing_connections, output_message]
 

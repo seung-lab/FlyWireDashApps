@@ -6,6 +6,8 @@ from nglui.statebuilder import *
 import time
 from .utils import *
 
+cyto.load_extra_layouts()
+
 
 def register_callbacks(app, config=None):
     """Set up callbacks to be passed to app.
@@ -48,13 +50,6 @@ def register_callbacks(app, config=None):
             id_list, cleft_thresh, config, timestamp
         )
 
-        # THIS IS WHERE THE DATA GOES #
-        # raw_connectivity_dict = {
-        #     "id1": {"id2": 39, "id3": 0},
-        #     "id2": {"id1": 2, "id3": 45},
-        #     "id3": {"id1": 0, "id2": 1},
-        # }
-
         # converts raw dict-of-dicts format into list of graph elements that can be read by cytoscape #
         graph_readable_elements = dictToElements(raw_connectivity_dict)
 
@@ -65,6 +60,7 @@ def register_callbacks(app, config=None):
                 id="cytoscape",
                 # sets initial positions of nodes using templates #
                 layout={"name": "circle"},
+                # layout={"name": "dagre"}, MAYBE?
                 # styles plot width and height #
                 style={"width": "1000px", "height": "500px",},
                 # sets elements using input data #
@@ -82,9 +78,53 @@ def register_callbacks(app, config=None):
                             "target-arrow-shape": "triangle",
                         },
                     },
-                    {"selector": "[weight > 10]", "style": {"line-color": "yellow"}},
-                    {"selector": "[weight > 50]", "style": {"line-color": "orange"}},
-                    {"selector": "[weight > 100]", "style": {"line-color": "red"}},
+                    {"selector": "[weight < 10]", "style": {"width": "1px",},},
+                    {"selector": "[weight >= 10]", "style": {"width": "3px",},},
+                    {"selector": "[weight >= 20]", "style": {"width": "5px",},},
+                    {"selector": "[weight >= 100]", "style": {"width": "10px",},},
+                    # sets color of edge to nt value #
+                    {
+                        "selector": "[nt = 'gaba']",
+                        "style": {
+                            "line-color": "#636dfa",
+                            "target-arrow-color": "#636dfa",
+                        },
+                    },
+                    {
+                        "selector": "[nt = 'ach']",
+                        "style": {
+                            "line-color": "#ef553b",
+                            "target-arrow-color": "#ef553b",
+                        },
+                    },
+                    {
+                        "selector": "[nt = 'glut']",
+                        "style": {
+                            "line-color": "#00cc96",
+                            "target-arrow-color": "#00cc96",
+                        },
+                    },
+                    {
+                        "selector": "[nt = 'oct']",
+                        "style": {
+                            "line-color": "#ab63fa",
+                            "target-arrow-color": "#ab63fa",
+                        },
+                    },
+                    {
+                        "selector": "[nt = 'ser']",
+                        "style": {
+                            "line-color": "#ffa15a",
+                            "target-arrow-color": "#ffa15a",
+                        },
+                    },
+                    {
+                        "selector": "[nt = 'da']",
+                        "style": {
+                            "line-color": "#19d3f3",
+                            "target-arrow-color": "#19d3f3",
+                        },
+                    },
                 ],
             ),
         ]
