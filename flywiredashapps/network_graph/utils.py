@@ -2,11 +2,12 @@ from ..common import lookup_utilities
 import pandas as pd
 
 # defines function to convert raw connectivity information from dict of dicts to network graph readable format #
-def dictToElements(input_data):
+def dictToElements(input_data, conn_thresh):
     """Convert raw connectivity information into network graph readable format.
     
     Keyword Arguments:
     input_data -- raw connectivity data (dict of dicts where first key is upstream, second key is downstream, value is number of connections e.g. {'id1':{'id2':65,'id3':0},'id2'{'id1':4,'id3':57},'id3'{'id1':0,'id2':5},})
+    conn_thresh -- minimum synapses to show connection (float)
     """
     # makes blank lists to populate with nodes and edges #
     nodes = []
@@ -19,7 +20,7 @@ def dictToElements(input_data):
         # for each key in the input dict other than the x key... #
         for y in list(input_data[x].keys()):
             # ...not including edges with 0 connections... #
-            if input_data[x][y]["connections"] != 0:
+            if input_data[x][y]["connections"] >= int(conn_thresh):
                 # add the source, target, and weight of the connection as an edge #
                 edges.append(
                     {
@@ -134,8 +135,6 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
             else:
                 # ...sets the nt value to None #
                 outgoing_connections[x][y]["nt"] = None
-
-    print(outgoing_connections)
 
     return [outgoing_connections, output_message]
 

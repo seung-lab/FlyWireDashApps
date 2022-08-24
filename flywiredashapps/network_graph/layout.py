@@ -108,6 +108,39 @@ def page_layout(state={}):
                 ],
                 style={"margin-left": "5px", "margin-top": "5px",},
             ),
+            # defines connection score div#
+            html.Div(
+                children=[
+                    # defines connection score message #
+                    dcc.Textarea(
+                        id="conn_message_text",
+                        value="Minimum syns to show connection (default 1):",
+                        style={
+                            "width": "355px",
+                            "resize": "none",
+                            "display": "inline-block",
+                            "vertical-align": "top",
+                        },
+                        rows=1,
+                        disabled=True,
+                    ),
+                    # defines input field for connection score threshold #
+                    dcc.Input(
+                        **create_component_kwargs(
+                            state,
+                            id_inner="conn_thresh_field",
+                            type="number",
+                            value=1,
+                            style={
+                                "display": "inline-block",
+                                "width": "65px",
+                                "vertical-align": "top",
+                            },
+                        )
+                    ),
+                ],
+                style={"margin-left": "5px", "margin-top": "5px",},
+            ),
             # defines timestamp div #
             html.Div(
                 children=[

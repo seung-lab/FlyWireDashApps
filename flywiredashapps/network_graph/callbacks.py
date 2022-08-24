@@ -23,15 +23,17 @@ def register_callbacks(app, config=None):
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "conn_thresh_field"}, "value"),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
     )
-    def update_output(n_clicks, id_list, cleft_thresh, timestamp):
+    def update_output(n_clicks, id_list, cleft_thresh, conn_thresh, timestamp):
         """Create network graph for queried ids.
 
         Keyword arguments:
         n_clicks -- unused trigger that tracks clicks for submit button
         id_list -- root ids of queried neurons (str)
         cleft_thresh -- value of cleft score threshold (float)
+        conn_thresh -- minimum synapses to show connection (float)
         timestamp -- utc timestamp as datetime or unix (str)
         """
 
@@ -51,7 +53,7 @@ def register_callbacks(app, config=None):
         )
 
         # converts raw dict-of-dicts format into list of graph elements that can be read by cytoscape #
-        graph_readable_elements = dictToElements(raw_connectivity_dict)
+        graph_readable_elements = dictToElements(raw_connectivity_dict, conn_thresh)
 
         # sets elements of post_submit_div to show graph #
         post_submit = [
