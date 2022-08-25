@@ -20,6 +20,7 @@ def register_callbacks(app, config=None):
     # defines callback that generates main tables and violin plots #
     @app.callback(
         Output("post_submit_div", "children"),
+        Output("message_text", "value"),
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
@@ -43,6 +44,10 @@ def register_callbacks(app, config=None):
 
         # records start time #
         start_time = time.time()
+
+        # if no timestamp provided, sets to current time #
+        if timestamp == None:
+            timestamp = datetime.datetime.utcnow()
 
         # converts string input to list of string ids, removes bad ids into separate list #
         id_list, removed_list = inputToRootList(id_list, config, timestamp)
@@ -134,5 +139,22 @@ def register_callbacks(app, config=None):
         # calculates total time #
         total_time = time.time() - start_time
 
-        return post_submit
+        if len(removed_list) == 0:
+            message = (
+                "Graph generated in "
+                + str(int(total_time))
+                + " seconds. "
+                + filter_message
+            )
+        else:
+            message = (
+                "Graph generated in "
+                + str(int(total_time))
+                + " seconds. "
+                + filter_message
+                + "Bad IDs removed: "
+                + str(removed_list)
+            )
+
+        return [post_submit, message]
 

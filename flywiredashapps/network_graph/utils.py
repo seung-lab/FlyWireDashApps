@@ -1,5 +1,6 @@
 from ..common import lookup_utilities
 import pandas as pd
+import datetime
 
 # defines function to convert raw connectivity information from dict of dicts to network graph readable format #
 def dictToElements(input_data, conn_thresh):
@@ -60,12 +61,16 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
         config.get("datastack", None), config.get("server_address", None)
     )
 
+    print("ROOT LIST:", root_list)
+
     # creates synapse df using root list for pre and post partner ids #
     syn_df = client.materialize.query_table(
         "synapses_nt_v1",
         filter_in_dict={"pre_pt_root_id": root_list, "post_pt_root_id": root_list,},
         timestamp=timestamp,
     )
+
+    print(syn_df["pre_pt_root_id"].value_counts())
 
     # calculates initial number of synapses by counting legth of df #
     raw_num = len(syn_df)
