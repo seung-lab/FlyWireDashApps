@@ -53,7 +53,9 @@ def register_callbacks(app, config=None):
             timestamp = datetime.datetime.utcnow()
 
         # converts string input to list of string ids, removes bad ids into separate list #
-        id_list, removed_list = inputToRootList(id_list, config, timestamp)
+        id_list, removed_list, outdated_list = inputToRootList(
+            id_list, config, timestamp
+        )
 
         # gets connectivity data for id list and info about removed synapses #
         raw_connectivity_dict, filter_message = getSynDoD(
@@ -72,7 +74,7 @@ def register_callbacks(app, config=None):
                 layout={"name": "circle"},
                 # layout={"name": "dagre"}, MAYBE?
                 # styles plot width and height #
-                style={"width": "600px", "height": "500px",},
+                style={"width": "750px", "height": "500px",},
                 # sets elements using input data #
                 elements=graph_readable_elements,
                 # styles graph #
@@ -142,32 +144,21 @@ def register_callbacks(app, config=None):
         # calculates total time #
         total_time = time.time() - start_time
 
-        if len(removed_list) == 0:
-            message = (
-                "Graph generated in "
-                + str(int(total_time))
-                + " seconds. "
-                + filter_message
-            )
-        else:
-            message = (
-                "Graph generated in "
-                + str(int(total_time))
-                + " seconds. "
-                + filter_message
-                + "Bad IDs removed: "
-                + str(removed_list)
-            )
+        # sets return message text #
+        message = (
+            "Graph generated in " + str(int(total_time)) + " seconds. " + filter_message
+        )
+        # adds message if bad IDs are removed #
+        if len(removed_list) != 0:
+            message = message + "Bad IDs removed: " + str(removed_list)
+        # adds message if outdated IDs are removed #
+        if len(outdated_list) != 0:
+            message = message + "Outdated IDs removed: " + str(outdated_list)
 
         # sets url for nt key image #
         key_image = html.Img(
             src="https://raw.githubusercontent.com/seung-lab/FlyWireDashApps/network-graph-app/flywiredashapps/network_graph/nt_key_horiz.png"
         )
-
-        # # adds border to graph post-submission #
-        # post_submit_style = (
-            
-        # )
 
         return [post_submit, key_image, message, ""]
 

@@ -2,6 +2,27 @@ from ..common import lookup_utilities
 import pandas as pd
 import datetime
 
+
+def checkFreshness(root_id, config, timestamp):
+    """Check whether a root ID is current.
+
+    Keyword arguments:
+    input_str -- 18-digit root id (str)
+    config -- config settings (dict)
+    timestamp -- utc timestamp (datetime object)
+    """
+
+    # sets client #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None),
+    )
+
+    # returns True if root id is current, False if not #
+    answer = client.chunkedgraph.is_latest_roots(int(root_id), timestamp=timestamp,)
+
+    return answer
+
+
 # defines function to convert raw connectivity information from dict of dicts to network graph readable format #
 def dictToElements(input_data, conn_thresh):
     """Convert raw connectivity information into network graph readable format.
@@ -61,16 +82,12 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
         config.get("datastack", None), config.get("server_address", None)
     )
 
-    print("ROOT LIST:", root_list)
-
     # creates synapse df using root list for pre and post partner ids #
     syn_df = client.materialize.query_table(
         "synapses_nt_v1",
         filter_in_dict={"pre_pt_root_id": root_list, "post_pt_root_id": root_list,},
         timestamp=timestamp,
     )
-
-    print(syn_df["pre_pt_root_id"].value_counts())
 
     # calculates initial number of synapses by counting legth of df #
     raw_num = len(syn_df)
@@ -177,7 +194,16 @@ def inputToRootList(input_str, config={}, timestamp=None):
         else:
             removed_entries.append(i)
 
-    return [root_list, removed_entries]
+    # creates list for outdated entries #
+    outdated_entries = []
+
+    # checks each id for freshness at the given timestamp #
+    for i in root_list:
+        if checkFreshness(i, config, timestamp) == False:
+            outdated_entries.append(i)
+            root_list.remove(i)
+
+    return [root_list, removed_entries, outdated_entries]
 
 
 def nucToRoot(nuc_id, config={}, timestamp=None):

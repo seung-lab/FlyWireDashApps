@@ -206,7 +206,7 @@ def page_layout(state={}):
                 html.Div(
                     id="post_submit_div",
                     style={
-                        "width": "600px",
+                        "width": "750px",
                         "height": "500px",
                         "border-style": "solid",
                         "border-width": "1px",
