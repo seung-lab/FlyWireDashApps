@@ -19,8 +19,11 @@ def register_callbacks(app, config=None):
 
     # defines callback that generates main tables and violin plots #
     @app.callback(
+        # Output("post_submit_div", "style"),
         Output("post_submit_div", "children"),
+        Output("key_div", "children"),
         Output("message_text", "value"),
+        Output("submit_loader", "value"),
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
@@ -69,7 +72,7 @@ def register_callbacks(app, config=None):
                 layout={"name": "circle"},
                 # layout={"name": "dagre"}, MAYBE?
                 # styles plot width and height #
-                style={"width": "1000px", "height": "500px",},
+                style={"width": "600px", "height": "500px",},
                 # sets elements using input data #
                 elements=graph_readable_elements,
                 # styles graph #
@@ -156,5 +159,15 @@ def register_callbacks(app, config=None):
                 + str(removed_list)
             )
 
-        return [post_submit, message]
+        # sets url for nt key image #
+        key_image = html.Img(
+            src="https://raw.githubusercontent.com/seung-lab/FlyWireDashApps/network-graph-app/flywiredashapps/network_graph/nt_key_horiz.png"
+        )
+
+        # # adds border to graph post-submission #
+        # post_submit_style = (
+            
+        # )
+
+        return [post_submit, key_image, message, ""]
 
