@@ -88,12 +88,14 @@ def register_callbacks(app, config=None):
                             "curve-style": "bezier",
                             "label": "data(weight)",
                             "target-arrow-shape": "triangle",
+                            "width": "data(adjusted_weight)",
                         },
                     },
-                    {"selector": "[weight < 10]", "style": {"width": "1px",},},
-                    {"selector": "[weight >= 10]", "style": {"width": "3px",},},
-                    {"selector": "[weight >= 20]", "style": {"width": "5px",},},
-                    {"selector": "[weight >= 100]", "style": {"width": "10px",},},
+                    # old method for setting edge weights manually, left in just in case we want to switch back #
+                    # {"selector": "[weight < 10]", "style": {"width": "1px",},},
+                    # {"selector": "[weight >= 10]", "style": {"width": "3px",},},
+                    # {"selector": "[weight >= 20]", "style": {"width": "5px",},},
+                    # {"selector": "[weight >= 100]", "style": {"width": "10px",},},
                     # sets color of edge to nt value #
                     {
                         "selector": "[nt = 'gaba']",

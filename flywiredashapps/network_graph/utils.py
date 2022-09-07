@@ -1,6 +1,7 @@
 from ..common import lookup_utilities
 import pandas as pd
 import datetime
+import math
 
 
 def checkFreshness(root_id, config, timestamp):
@@ -51,6 +52,9 @@ def dictToElements(input_data, conn_thresh):
                             "target": str(y),
                             "weight": input_data[x][y]["connections"],
                             "nt": input_data[x][y]["nt"],
+                            "adjusted_weight": math.log(
+                                (input_data[x][y]["connections"]), 1.5
+                            ),
                         }
                     }
                 )
