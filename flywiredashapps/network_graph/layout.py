@@ -30,10 +30,11 @@ def page_layout(state={}):
                     # defines message text area for displaying instructions and feedback #
                     dbc.Textarea(
                         id="message_text",
-                        value="Input up to 20 Root or Nucleus IDs separated by commas\n"
+                        value="Input up to 20 Root or Nucleus IDs separated by commas.\n"
                         "Lookup takes ~2-3 seconds per entry.",
                         disabled=True,
                         autoFocus=True,
+                        rows=2,
                     ),
                     style={
                         "margin-left": "5px",

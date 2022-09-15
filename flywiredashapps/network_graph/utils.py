@@ -198,16 +198,18 @@ def inputToRootList(input_str, config={}, timestamp=None):
         else:
             removed_entries.append(i)
 
-    # creates list for outdated entries #
+    # creates blank lists to split outdated and fresh roots into #
     outdated_entries = []
+    fresh_entries = []
 
     # checks each id for freshness at the given timestamp #
     for i in root_list:
         if checkFreshness(i, config, timestamp) == False:
             outdated_entries.append(i)
-            root_list.remove(i)
+        elif checkFreshness(i, config, timestamp) == True:
+            fresh_entries.append(i)
 
-    return [root_list, removed_entries, outdated_entries]
+    return [fresh_entries, removed_entries, outdated_entries]
 
 
 def nucToRoot(nuc_id, config={}, timestamp=None):

@@ -23,6 +23,7 @@ def register_callbacks(app, config=None):
         Output("post_submit_div", "children"),
         Output("key_div", "children"),
         Output("message_text", "value"),
+        Output("message_text", "rows"),
         Output("submit_loader", "value"),
         Input("submit_button", "n_clicks"),
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
@@ -150,17 +151,20 @@ def register_callbacks(app, config=None):
         message = (
             "Graph generated in " + str(int(total_time)) + " seconds. " + filter_message
         )
+        message_rows = 1
         # adds message if bad IDs are removed #
         if len(removed_list) != 0:
             message = message + "Bad IDs removed: " + str(removed_list)
+            message_rows += 1
         # adds message if outdated IDs are removed #
         if len(outdated_list) != 0:
-            message = message + "Outdated IDs removed: " + str(outdated_list)
+            message = message + "\nOutdated IDs removed: " + str(outdated_list)
+            message_rows += 1
 
         # sets url for nt key image #
         key_image = html.Img(
             src="https://raw.githubusercontent.com/seung-lab/FlyWireDashApps/network-graph-app/flywiredashapps/network_graph/nt_key_horiz.png"
         )
 
-        return [post_submit, key_image, message, ""]
+        return [post_submit, key_image, message, message_rows, ""]
 
