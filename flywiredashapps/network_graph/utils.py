@@ -52,8 +52,8 @@ def dictToElements(input_data, conn_thresh):
                             "target": str(y),
                             "weight": input_data[x][y]["connections"],
                             "nt": input_data[x][y]["nt"],
-                            "adjusted_weight": math.log(
-                                (input_data[x][y]["connections"]), 1.5
+                            "adjusted_weight": min(
+                                math.log((input_data[x][y]["connections"]), 1.5), 20,
                             ),
                         }
                     }
