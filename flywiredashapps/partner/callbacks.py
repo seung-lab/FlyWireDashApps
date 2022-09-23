@@ -478,11 +478,21 @@ def register_callbacks(app, config=None):
         n_clicks -- unused trigger that counts how many times the download button has been pressed
         table_data -- table data
         """
+        root_A, root_B = [str(table_data[0]["Value"]), str(table_data[3]["Value"])]
+        out_name = "partners__" + root_A + "_" + root_B + ".csv"
         # converts table data to dataframe #
         summary_df = pd.DataFrame(table_data)
-
+        # converts coordinates from string to list while preserving non-nucleate #
+        if "[" in summary_df.loc[2, "Value"][0]:
+            summary_df.loc[2, "Value"] = [
+                int(x.strip()) for x in summary_df.loc[2, "Value"][0][1:-1].split(",")
+            ]
+        if "[" in summary_df.loc[5, "Value"][0]:
+            summary_df.loc[5, "Value"] = [
+                int(x.strip()) for x in summary_df.loc[5, "Value"][0][1:-1].split(",")
+            ]
         # converts dataframe to csv and sends to user #
-        return dcc.send_data_frame(summary_df.to_csv, "partner_table.csv")
+        return dcc.send_data_frame(summary_df.to_csv, out_name)
 
     # defines callback that generates connectivity app link  #
     @app.callback(

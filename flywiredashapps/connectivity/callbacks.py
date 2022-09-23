@@ -645,26 +645,36 @@ def register_callbacks(app, config=None):
         table_data -- data from summary table
         """
 
-        # converts table data into dataframe #
-        summary_df = pd.DataFrame(table_data)
+        root_id = str(table_data[0]["Root ID"])
+        out_name = root_id + "_summary_table.csv"
 
-        # converts dataframe to csv and sends to user #
-        return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
+        summary_df = pd.DataFrame(table_data)
+        if "[" in summary_df.loc[0, "Nucleus Coordinates"][0]:
+            summary_df.loc[0, "Nucleus Coordinates"] = [
+                int(x.strip())
+                for x in summary_df.loc[0, "Nucleus Coordinates"][1:-1].split(",")
+            ]
+        return dcc.send_data_frame(summary_df.to_csv, out_name)
 
     # defines callback to download upstream table as csv on button press #
     @app.callback(
         Output("upstream_download", "data"),
         Input("upstream_download_button", "n_clicks"),
         State("incoming_table", "data"),
+        State("summary_table", "data"),
         prevent_initial_call=True,
     )
-    def downloadUpstream(n_clicks, table_data):
+    def downloadUpstream(n_clicks, table_data, summary_data):
         """Download upstream table as csv file.
 
         Keyword arguments:
         n_clicks -- unused trigger that tracks clicks for download button
         table_data -- data from upstream table
+        summary_data -- data from summary table
         """
+
+        root_id = str(summary_data[0]["Root ID"])
+        out_name = root_id + "_upstream_partner_table.csv"
 
         # converts table data to dataframe #
         upstream_df = pd.DataFrame(table_data)
@@ -673,23 +683,28 @@ def register_callbacks(app, config=None):
         upstream_df["Upstream Partner ID"] = [
             x[1:19] for x in upstream_df["Upstream Partner ID"]
         ]
-        # converts dataframe to csv and sends to user #
-        return dcc.send_data_frame(upstream_df.to_csv, "upstream_table.csv")
+
+        return dcc.send_data_frame(upstream_df.to_csv, out_name)
 
     # defines callback to download downstream table as csv on button press #
     @app.callback(
         Output("downstream_download", "data"),
         Input("downstream_download_button", "n_clicks"),
         State("outgoing_table", "data"),
+        State("summary_table", "data"),
         prevent_initial_call=True,
     )
-    def downloadDownstream(n_clicks, table_data):
+    def downloadDownstream(n_clicks, table_data, summary_data):
         """Download downstream table as csv file.
 
         Keyword arguments:
         n_clicks -- unused trigger that tracks clicks for download button
         table_data -- data from downstream table
+        summary_data -- data from summary table
         """
+
+        root_id = str(summary_data[0]["Root ID"])
+        out_name = root_id + "_downstream_partner_table.csv"
 
         # converts table data to dataframe #
         downstream_df = pd.DataFrame(table_data)
@@ -698,8 +713,8 @@ def register_callbacks(app, config=None):
         downstream_df["Downstream Partner ID"] = [
             x[1:19] for x in downstream_df["Downstream Partner ID"]
         ]
-        # converts dataframe to csv and sends to user #
-        return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
+
+        return dcc.send_data_frame(downstream_df.to_csv, out_name)
 
     # defines callback that generates partner app link  #
     @app.callback(
