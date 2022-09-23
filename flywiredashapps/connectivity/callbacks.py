@@ -35,16 +35,32 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "input_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
     )
-    def update_output(n_clicks, query_id, cleft_thresh, timestamp):
+    def update_output(n_clicks, query_id, cleft_thresh, timestamp, filter_list):
         """Create summary and partner tables with violin plots for queried root id.
 
         Keyword arguments:
-        n_clicks -- unused trigger that tracks clicks for submit button
-        query_id -- root id of queried neuron (str)
-        cleft_thresh -- value of cleft score threshold (float)
-        timestamp -- utc timestamp as datetime or unix (str)
+        n_clicks -- tracks clicks for submit button
+        query_id -- root id of queried neuron as int
+        cleft_thresh -- float value of cleft score threshold
+        timestamp -- str format utc timestamp as datetime or unix
+        filter_list -- str list of root ids to filter results by
         """
+
+        # if filter list exists, converts to tuple of ints #
+        if filter_list != None and filter_list != []:
+            filter_list = filter_list.strip("[")
+            filter_list = filter_list.strip("]")
+            filter_list = filter_list.split(",")
+            filter_list = [int(x.strip(" ")) for x in filter_list]
+            # sorts list and converts to a tuple for hashability #
+            filter_list.sort()
+            filter_list = tuple(filter_list)
+        elif filter_list == []:
+            filter_list = None
+        else:
+            pass
 
         # sets start time #
         start_time = time.time()
@@ -232,7 +248,11 @@ def register_callbacks(app, config=None):
 
         # builds dataframes and graphs #
         sum_list = makeSummaryDataFrame(
-            root_id, cleft_thresh, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         sum_df = sum_list[0]
 
@@ -260,22 +280,52 @@ def register_callbacks(app, config=None):
 
         # creates partner dataframes, violin plots, and pie charts #
         up_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            upstream=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_df = makePartnerDataFrame(
-            root_id, cleft_thresh, upstream=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            upstream=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         up_violin = makeViolin(
-            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_violin = makeViolin(
-            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         up_pie = makePie(
-            root_id, cleft_thresh, incoming=True, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=True,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
         down_pie = makePie(
-            root_id, cleft_thresh, incoming=False, config=config, timestamp=timestamp
+            root_id,
+            cleft_thresh,
+            incoming=False,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
 
         # assigns df values to 'cols' and 'data' for passing to dash table #
@@ -728,10 +778,11 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makePartLink(
-        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh,
     ):
         """Create partner app link using selected IDs.
 
@@ -794,10 +845,11 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makeSumLink(
-        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh, filter_list
     ):
         """Create summary app link using selected IDs.
         
@@ -809,6 +861,7 @@ def register_callbacks(app, config=None):
         out_data -- outgoing table data (dataframe)
         timestamp -- utc timestamp as datetime or unix (str)
         cleft_thresh -- value of cleft threshold field (float)
+        filter_list -- list of root ids to filter results by (str)
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #
@@ -850,8 +903,9 @@ def register_callbacks(app, config=None):
         State("summary_table", "data",),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
     )
-    def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp):
+    def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp, filter_list):
         """Create link with all synapses on queried neuron.
 
         Keyword arguments:
@@ -859,7 +913,22 @@ def register_callbacks(app, config=None):
         query_data -- summary table data (dataframe)
         cleft_thresh -- value of cleft threshold field (float)
         timestamp -- utc timestamp as datetime or unix (str)
+        filter_list -- list of root ids to filter results by (str)
         """
+
+        # if filter list exists, converts to tuple of ints #
+        if filter_list != None and filter_list != []:
+            filter_list = filter_list.strip("[")
+            filter_list = filter_list.strip("]")
+            filter_list = filter_list.split(",")
+            filter_list = [int(x.strip(" ")) for x in filter_list]
+            # sorts list and converts to a tuple for hashability #
+            filter_list.sort()
+            filter_list = tuple(filter_list)
+        elif filter_list == []:
+            filter_list = None
+        else:
+            pass
 
         # gets id of queried neuron from table #
         query_out = [query_data[0]["Root ID"]]
@@ -869,7 +938,12 @@ def register_callbacks(app, config=None):
 
         # builds url #
         out_url = buildAllsynLink(
-            query_out, cleft_thresh, nuc, config=config, timestamp=timestamp
+            query_out,
+            cleft_thresh,
+            nuc,
+            config=config,
+            timestamp=timestamp,
+            filter_list=filter_list,
         )
 
         return [out_url, ""]

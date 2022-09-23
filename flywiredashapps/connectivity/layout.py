@@ -144,6 +144,37 @@ def page_layout(state={}):
                 ],
                 style={"margin-left": "5px", "margin-top": "5px",},
             ),
+            html.Div(
+                children=[
+                    # defines filter list input message #
+                    dcc.Textarea(
+                        id="filter_list_message_text",
+                        value="List of root IDs to filter results (optional)",
+                        style={
+                            "width": "420px",
+                            "resize": "none",
+                            "display": "block",
+                            "vertical-align": "top",
+                        },
+                        rows=1,
+                        disabled=True,
+                    ),
+                    # defines timestamp input field #
+                    dcc.Input(
+                        **create_component_kwargs(
+                            state,
+                            id_inner="filter_list_field",
+                            type="text",
+                            style={
+                                "display": "block",
+                                "width": "420px",
+                                "vertical-align": "top",
+                            },
+                        )
+                    ),
+                ],
+                style={"margin-left": "5px", "margin-top": "5px",},
+            ),
             # defines sumbission button #
             dbc.Button(
                 id="submit_button",
