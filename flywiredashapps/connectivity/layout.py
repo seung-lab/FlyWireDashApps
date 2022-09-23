@@ -3,23 +3,30 @@ from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
 import flask
-import datetime
-from .utils import getTime
-from ..common.dash_url_helper import create_component_kwargs, State
+from ..common.dash_url_helper import create_component_kwargs
 
+
+# sets app title #
 title = "Fly Connectivity Viewer"
 
-# sets id of url string and ??? #
+# makes list of current url and page layout #
 url_bar_and_content_div = html.Div(
     [dcc.Location(id="url", refresh=False), html.Div(id="page-layout")]
 )
 
 # defines function to set page layout #
 def page_layout(state={}):
+    """Create html div page layout.
+    
+    Keyword Arguments:
+    state -- used to pass state of component values (dict of dicts, default {})
+    """
+
     # defines layout of various app elements #
     layout = html.Div(
         [
             html.Div(
+                # defines message text area for displaying instructions and feedback #
                 dbc.Textarea(
                     id="message_text",
                     value=(
@@ -38,7 +45,7 @@ def page_layout(state={}):
                 },
             ),
             html.Br(),
-            # defines container for input message and field #
+            # defines id input div #
             html.Div(
                 children=[
                     # defines input message #
@@ -71,7 +78,7 @@ def page_layout(state={}):
                 ],
                 style={"margin-left": "5px",},
             ),
-            # defines container for cleft score message and field #
+            # defines cleft score div#
             html.Div(
                 children=[
                     # defines cleft score message #
@@ -104,6 +111,7 @@ def page_layout(state={}):
                 ],
                 style={"margin-left": "5px", "margin-top": "5px",},
             ),
+            # defines timestamp div #
             html.Div(
                 children=[
                     # defines timestamp input message #
@@ -187,7 +195,7 @@ def page_layout(state={}):
             ),
             # defines div for holding upstream download button #
             html.Div(children=[], id="post_submit_download__upstream"),
-            # defines incoming table #
+            # defines incoming (upstream partner) table #
             html.Div(
                 dash_table.DataTable(
                     id="incoming_table", page_size=5, row_selectable="multi",
@@ -196,14 +204,14 @@ def page_layout(state={}):
             ),
             # defines div for holding downstream download button #
             html.Div(children=[], id="post_submit_download__downstream"),
-            # defines outgoing table #
+            # defines outgoing (downstream partner) table #
             html.Div(
                 dash_table.DataTable(
                     id="outgoing_table", page_size=5, row_selectable="multi",
                 ),
                 style={"margin-left": "5px", "margin-right": "5px",},
             ),
-            # defines div for holding post-submission download buttons #
+            # defines div for holding post-submission buttons #
             html.Div(children=[], id="post_submit_linkbuilder_buttons"),
         ]
     )
@@ -211,7 +219,9 @@ def page_layout(state={}):
     return layout
 
 
+# defines function to return current layout of app #
 def app_layout():
+    """Return current layout."""
     # https://dash.plotly.com/urls "Dynamically Create a Layout for Multi-Page App Validation"
     if flask.has_request_context():  # for real
         return url_bar_and_content_div

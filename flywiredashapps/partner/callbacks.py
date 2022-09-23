@@ -1,15 +1,19 @@
-import time
-import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, dcc, html, Input, Output, State, dash_table, no_update
-import urllib.parse
-from itertools import compress
+from dash import dcc, html, Input, Output, State, no_update
 from dash.exceptions import PreventUpdate
 from .utils import *
 import pandas as pd
 
 
 def register_callbacks(app, config=None):
+    """Set up callbacks to be passed to app.
+
+    Keyword Arguments:
+    app -- the app itself
+    config -- dictionary of config settings (dict, default None)
+    """
+
+    # defines callback that generates the main table and buttons #
     @app.callback(
         Output("table", "columns"),
         Output("table", "data"),
@@ -29,11 +33,11 @@ def register_callbacks(app, config=None):
         """Update app based on input.
         
         Keyword arguments:
-        n_clicks -- int number of times the submit button has been pressed
-        id_a -- str format root or nuc id of input a
-        id_b -- str format root or nuc id of input b
-        cleft_thresh -- float value of cleft threshold field
-        timestamp -- string format datetime or unix utc timestamp
+        n_clicks -- unused trigger that counts how many times the submit button was pressed
+        id_a -- root or nuc id of input a (str)
+        id_b -- root or nuc id of input b (str)
+        cleft_thresh -- value of cleft threshold field (float)
+        timestamp -- datetime or unix utc timestamp (str)
         """
 
         # avoids premature submission #
@@ -97,6 +101,7 @@ def register_callbacks(app, config=None):
             pass
 
         # bad id handling #
+        # triggers if length is wrong #
         if (len(id_a) != 18 and len(id_a) != 7) or (len(id_b) != 18 and len(id_b) != 7):
             return [
                 no_update,
@@ -110,6 +115,7 @@ def register_callbacks(app, config=None):
             ]
         else:
             pass
+        # triggers if length matches, but content isn't numeric #
         try:
             id_a = int(id_a)
             id_b = int(id_b)
@@ -125,7 +131,7 @@ def register_callbacks(app, config=None):
                 no_update,
             ]
 
-        # nuc id detection and conversion #
+        # nucleus id detection and conversion #
         if len(str(id_a)) == 7:
             id_a = nucToRoot(id_a, config, timestamp=timestamp)
         else:
@@ -165,6 +171,7 @@ def register_callbacks(app, config=None):
         #         no_update,
         #     ]
 
+        # handles cases where the same id is input for both a and b #
         if id_a == id_b:
             return [
                 no_update,
@@ -183,7 +190,7 @@ def register_callbacks(app, config=None):
         nuc_a_df = getNuc(id_a, config, timestamp)
         nuc_b_df = getNuc(id_b, config, timestamp)
 
-        # handles cells without nuclei
+        # handles cells without nuclei #
         try:
             nuc_id_a = nuc_a_df.loc[0, "Nuc ID"]
             nuc_loc_a = nuc_a_df.loc[0 : (len(nuc_a_df) - 1), "Nucleus Coordinates"]
@@ -232,6 +239,7 @@ def register_callbacks(app, config=None):
             timestamp=timestamp,
         )
 
+        # creates message string for output #
         message = "A>B: " + a_to_b_message + "\n" + "B>A: " + b_to_a_message
 
         # makes df of syn data to add to full df #
@@ -303,6 +311,7 @@ def register_callbacks(app, config=None):
             ),
         ]
 
+        # creates div for buttons that show up after initial query #
         post_submit_div = [
             # defines NG link generation button #
             dbc.Button(
@@ -320,6 +329,7 @@ def register_callbacks(app, config=None):
                     "vertical-align": "top",
                 },
             ),
+            html.Br(),
             # defines conn_A link generation button #
             dbc.Button(
                 "Port Neuron A to Connectivity App",
@@ -336,6 +346,7 @@ def register_callbacks(app, config=None):
                     "vertical-align": "top",
                 },
             ),
+            html.Br(),
             # defines conn_B link generation button #
             dbc.Button(
                 "Port Neuron B to Connectivity App",
@@ -352,6 +363,7 @@ def register_callbacks(app, config=None):
                     "vertical-align": "top",
                 },
             ),
+            html.Br(),
             # defines summary link generation button #
             dbc.Button(
                 "Port Neurons to Summary App",
@@ -369,13 +381,14 @@ def register_callbacks(app, config=None):
                 },
             ),
         ]
-
+        # creates div for download button #
         download_button_div = (
             dbc.Button(
                 "Download Partner Table as CSV File",
                 id="partner_download_button",
+                color="success",
                 style={
-                    "width": "400px",
+                    "width": "420px",
                     "margin-right": "5px",
                     "margin-left": "5px",
                     "margin-top": "5px",
@@ -408,18 +421,20 @@ def register_callbacks(app, config=None):
     )
     def makeLink(n_clicks, id_a, id_b, cleft_thresh, table_data, timestamp=None):
         """Create neuroglancer link using selected partners.
+
         Keyword arguments:
-        n_clicks -- unused dummy for trigger
-        id_a -- ??? format root id of input a
-        id_b -- ??? format root id of input b
-        cleft_thresh -- float value of cleft threshold field
-        table_data -- dataframe of summary table data
-        timestamp -- string format datetime or unix utc timestamp
+        n_clicks -- unused trigger that counts number of times submit button is pressed
+        id_a -- root id of input a (str)
+        id_b -- root id of input b (str)
+        cleft_thresh -- value of cleft threshold field (float)
+        table_data -- summary table data
+        timestamp -- datetime or unix utc timestamp (str)
         """
 
+        # converts table data into dataframe object #
         table_df = pd.DataFrame(table_data)
 
-        # sets timestamp to current time if no input or converts string input to datetime #
+        # converts string timestamp to datetime if present, defaults to current time if not #
         if timestamp == None:
             timestamp = getTime()
         else:
@@ -428,16 +443,21 @@ def register_callbacks(app, config=None):
         # makes list of nucleus coord strings #
         raw_nuc = [table_df.loc[2, "Value"], table_df.loc[5, "Value"]]
 
-        # convoluted, but allows for multinucleate handling #
+        # this part is convoluted, but allows for multinucleate handling #
+        # creates empty list to hold nucleus coordinates #
         nuc = []
-
+        # detects uni- vs. multinucleate and acts accordingly #
         for value in raw_nuc:
+            # if the value is a list of lists of coords from a multinucleate cell... #
             if type(value) == list:
+                # ... convert each list to a string and append it to nuc #
                 for nuc_loc in value:
                     nuc.append(str(nuc_loc))
+            # if the value is a single string (as in uninucleate cells), append it directly #
             else:
                 nuc.append(value)
 
+        # builds url #
         out_url = buildPartnerLink(
             id_a, id_b, cleft_thresh, nuc, config=config, timestamp=timestamp
         )
@@ -452,8 +472,15 @@ def register_callbacks(app, config=None):
         prevent_initial_call=True,
     )
     def downloadSummary(n_clicks, table_data):
+        """Download table as csv file.
+
+        Keyword Arguments:
+        n_clicks -- unused trigger that counts how many times the download button has been pressed
+        table_data -- table data
+        """
         root_A, root_B = [str(table_data[0]["Value"]), str(table_data[3]["Value"])]
         out_name = "partners__" + root_A + "_" + root_B + ".csv"
+        # converts table data to dataframe #
         summary_df = pd.DataFrame(table_data)
         # converts coordinates from string to list while preserving non-nucleate #
         if "[" in summary_df.loc[2, "Value"][0]:
@@ -464,6 +491,7 @@ def register_callbacks(app, config=None):
             summary_df.loc[5, "Value"] = [
                 int(x.strip()) for x in summary_df.loc[5, "Value"][0][1:-1].split(",")
             ]
+        # converts dataframe to csv and sends to user #
         return dcc.send_data_frame(summary_df.to_csv, out_name)
 
     # defines callback that generates connectivity app link  #
@@ -476,27 +504,29 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_input"}, "value"),
     )
-    def makeOutLinks(n_clicks, table_data, timestamp=None, cleft_thresh=50):
+    def makeOutLinks(trigger, table_data, timestamp=None, cleft_thresh=50):
         """Create outbound app links using selected IDs.
+        
         Keyword arguments:
-        n_clicks -- unused dummy for trigger
-        rows -- list of selected upstream row indices
+        trigger -- unused trigger that keeps track of when post_submit_div children updates
         table_data -- dataframe of summary table data
-        timestamp -- string format datetime or unix utc timestamp
-        cleft_thresh -- cleft score threshold for synapses 
+        timestamp -- datetime or unix utc timestamp (str)
+        cleft_thresh -- cleft score threshold for synapses (float, default 50)
         """
 
+        # sets variables for root ids a and b #
         root_A, root_B = [table_data[0]["Value"], table_data[3]["Value"]]
 
-        # sets timestamp to current time if no input or converts string input to datetime #
+        # sets variable for both roots #
+        both_roots = root_A + "," + root_B
+
+        # converts string timestamp input to datetime object if present, otherwise sets to current time #
         if timestamp == None:
             timestamp = getTime()
         else:
             timestamp = strToDatetime(timestamp)
 
-        both_roots = root_A + "," + root_B
-
-        # builds url using portUrl function #
+        # builds urls using portUrl function #
         con_url_A = portUrl(
             root_A,
             "connectivity",
@@ -519,12 +549,11 @@ def register_callbacks(app, config=None):
             timestamp=timestamp,
         )
 
-        # returns url string, alters button text, sends empty string for loader #
+        # returns url strings #
         return [con_url_A, con_url_B, sum_url]
 
     pass
 
 
-# runs program #
 if __name__ == "__main__":
     app.run_server()
