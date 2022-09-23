@@ -3,8 +3,9 @@ from dash import dcc
 from dash import html
 import dash_bootstrap_components as dbc
 import flask
-from ..common.dash_url_helper import create_component_kwargs, State
+from ..common.dash_url_helper import create_component_kwargs
 
+# sets app title #
 title = "Fly Neuron Summary"
 
 # sets id of url string and ??? #
@@ -14,6 +15,11 @@ url_bar_and_content_div = html.Div(
 
 # defines function to set page layout #
 def page_layout(state={}):
+    """Create html div page layout.
+    
+    Keyword Arguments:
+    state -- used to pass state of component values (dict of dicts, default {})
+    """
     # defines layout of various app elements (submission field, checkboxes, button, output table) #
     layout = html.Div(
         [
@@ -84,13 +90,23 @@ def page_layout(state={}):
                     id="table",
                     style_header={
                         "whiteSpace": "normal",
-                        "height": "auto",
+                        # "height": "auto",
                         "textAlign": "center",
                     },
+                    style_cell={
+                        "overflow": "hidden",
+                        "textOverflow": "ellipsis",
+                        "maxWidth": "200px",
+                        "minWidth": "105px",
+                    },
                     row_selectable="multi",
+                    fill_width=False,
+                    tooltip_data=[],
+                    tooltip_duration=None,
                 ),
                 style={"margin-left": "5px", "margin-right": "5px"},
             ),
+            # creates div for post submission components #
             html.Div(children=[], id="post_submit_div"),
         ]
     )
@@ -99,6 +115,7 @@ def page_layout(state={}):
 
 
 def app_layout():
+    """Return current layout."""
     # https://dash.plotly.com/urls "Dynamically Create a Layout for Multi-Page App Validation"
     if flask.has_request_context():  # for real
         return url_bar_and_content_div

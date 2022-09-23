@@ -1,5 +1,4 @@
 from ..common import lookup_utilities
-import time
 import json
 import cloudvolume
 import pandas as pd
@@ -11,7 +10,7 @@ def colorPick(num_of_segs):
     """Generate list of colors in hex spaced evenly around a color wheel.
     
     Keyword arguments:
-    num_of_segs -- number of segments to be colors as an int value
+    num_of_segs -- number of segments to be colored (int)
     """
     # makes blank list to fill with colors #
     colors = []
@@ -82,10 +81,10 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
     """Generate NG link.
     
     Keyword arguments:
-    root_list -- list of int-format root ids
-    nuc_list -- list of listed ints for x,y,z coords of nuclei in 4,4,40 nm resolution
-    cb -- currently unused bool option for colorblind-friendliness (default False)
-    config -- dictionary of config settings (default {})
+    root_list -- root ids (list of ints)
+    nuc_list -- x,y,z coords of nuclei in 4,4,40 nm resolution (list of lists of ints)
+    cb -- currently-unused option for colorblind-friendliness (bool, default False)
+    config -- config settings (dict, default {})
     """
 
     # generates list of hex colors for segments #
@@ -110,12 +109,15 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
         view_kws={"alpha_3d": 0.8},
     )
 
+    # sets point mapping rules #
     points = PointMapper(point_column="pt_position")
 
+    # sets nucleus coordinate annotation config #
     nuc_annos = AnnotationLayerConfig(
         name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
     )
 
+    # sets view anchor location and zoom level #
     view_options = {
         "position": [119412, 62016, 3539,],
         "zoom_3d": 10000,
@@ -142,8 +144,8 @@ def checkFreshness(root_id, config={}):
     """Check to see if root id is outdated.
     
     Keyword arguments:
-    root_id -- 18-digit int-format root id number
-    config -- dictionary of config settings (default {})
+    root_id -- 18-digit root id (int)
+    config -- config settings (dict, default {})
     """
     # sets client #
     client = lookup_utilities.make_client(
@@ -158,7 +160,8 @@ def coordsToRoot(coords, config={}):
     """Convert coordinates in 4,4,40 nm resolution to root id.
 
     Keyword arguments:
-    coords -- list of x,y,z coordinates in 4,4,40 nm resolution
+    coords -- x,y,z coordinates in 4,4,40 nm resolution (list of str)
+    config -- config settings (dict, default {})
     """
 
     # converts coordinates to ints #
@@ -198,8 +201,8 @@ def getNuc(root_id, config={}):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
-    root_id -- root or nucleus id formatted as listed str
-    config -- dictionary of config settings (default {})
+    root_id -- root or nucleus id (listed str)
+    config -- config settings (dict, default {})
     """
 
     # sets client #
@@ -232,28 +235,71 @@ def getNuc(root_id, config={}):
     return out_df.astype(str)
 
 
+def getTypes(root_id, config={}):
+    """Query cell type table and return str-format list of unique values.
+
+    Keyword arguments:
+    root_id -- root or nucleus id formatted (listed str)
+    config -- config settings (dict, default {})
+    """
+
+    # sets client using config #
+    client = lookup_utilities.make_client(
+        config.get("datastack", None), config.get("server_address", None)
+    )
+
+    # gets current materialization version #
+    mat_vers = max(client.materialize.get_versions())
+
+    # queries cell type table using root id #
+    type_df = client.materialize.query_table(
+        "neuron_information_v2",
+        filter_in_dict={"pt_root_id": [root_id]},
+        materialization_version=mat_vers,
+    )
+
+    # makes series of uniuqe values and converts to list #
+    tags = type_df["tag"].unique().tolist()
+
+    # converts list to string and removes brackets #
+    tags = str(tags)[1:-1]
+
+    # handles neurons with no tags #
+    if tags == "":
+        tags = "n/a"
+    else:
+        pass
+
+    return tags
+
+
 def inputToRootList(input_str, config={}):
     """Convert input string into list of int root ids.
 
     Keyword arguments:
-    input_str -- string of ids or 4,4,40nm coords separated by ,
-    config -- dictionary of config settings (default {})
+    input_str -- ids or 4,4,40nm coords separated by commas (str)
+    config -- config settings (dict, default {})
     """
+
     # splits input_str into list and strips spaces and brackets #
     input_list = [x.strip() for x in str(input_str).split(",")]
     input_list = [x.strip("[") for x in input_list]
     input_list = [x.strip("]") for x in input_list]
+
     # if ids are roots #
     if all([len(i) == 18 for i in input_list]):
         root_list = [int(i) for i in input_list]
+
     # if ids are nucs #
     elif all([len(i) == 7 for i in input_list]):
         root_list = [nucToRoot(int(i), config) for i in input_list]
+
     # if id is coordinates #
     elif len(input_list) % 3 == 0:
         root_list = [coordsToRoot(input_list, config)]
     else:
         root_list = input_list
+
     return root_list
 
 
@@ -261,7 +307,7 @@ def nmToNG(coords):
     """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
 
     Keyword arguments:
-    coords -- list of x,y,z coordinates as ints in 1,1,1 nm resolution
+    coords -- x,y,z coordinates as ints in 1,1,1 nm resolution (list of ints)
     """
     coords[0] /= 4
     coords[1] /= 4
@@ -274,16 +320,25 @@ def nucToRoot(nuc_id, config={}):
     """Convert nucleus id to root id.
 
     Keyword arguments:
-    nuc_id -- 7-digit nucleus id as int
+    nuc_id -- 7-digit nucleus id (int)
     """
+
+    # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
+
+    # sets materilaization version #
     mat_vers = max(client.materialize.get_versions())
+
+    # queries nucleus table #
     nuc_df = client.materialize.query_table(
         "nuclei_v1", filter_in_dict={"id": [nuc_id]}, materialization_version=mat_vers,
     )
+
+    # sets root id using information from nucleus table #
     root_id = int(nuc_df.loc[0, "pt_root_id"])
+
     return root_id
 
 
@@ -291,14 +346,16 @@ def portUrl(input_ids, app_choice, config={}):
     """Convert root ids into outbound url based on app choice.
 
     Keyword arguments:
-    input_ids -- string of selected 18-digit root ids separated by commas
-    app choice -- string choice of which app to send the inputs to
-    config -- dictionary of config settings (default {})
+    input_ids -- selected 18-digit root ids separated by commas (str)
+    app choice -- choice of which app to send the inputs to (str)
+    config -- config settings (dict, default {})
     """
 
+    # handles behavior for connectivity app port #
     if app_choice == "connectivity":
         base = config.get("con_app_base_url", None)
         query = "?input_field=" + input_ids + "&cleft_thresh_field=50"
+    # handles behavior for partner app port #
     elif app_choice == "partner":
         base = config.get("part_app_base_url", None)
         input_list = input_ids.split(",")
@@ -306,11 +363,19 @@ def portUrl(input_ids, app_choice, config={}):
         input_b = input_list[1].strip()[1:-1]
         query = "?input_a=" + input_a + "&input_b=" + input_b + "&cleft_thresh_input=50"
 
+    # combines base app address with query string #
     out_url = base + query
+
     return out_url
 
 
 def rootListToDataFrame(root_list, config={}):
+    """Use root ids to produce output dataframe.
+
+    Keyword arguments:
+    root list -- input root ids (list of ints)
+    config -- config settings (dict, default {})
+    """
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
@@ -325,6 +390,7 @@ def rootListToDataFrame(root_list, config={}):
             "Merges",
             "Total Edits",
             "Editors",
+            "Cell Identification",
             "Current",
         ]
     )
@@ -366,10 +432,15 @@ def rootListToDataFrame(root_list, config={}):
                     index=[0],
                 ).astype(str)
 
+            # queries cell type table to get all tags for each id #
+            types = getTypes(i, config)
+
+            # builds df columns #
             row_df["Splits"] = str(edits_dict[False])
             row_df["Merges"] = str(edits_dict[True])
             row_df["Total Edits"] = str(len(change_df))
             row_df["Editors"] = proofreaders
+            row_df["Cell Identification"] = types
             row_df["Current"] = freshness[0]
 
         # handles bad ids #
@@ -383,11 +454,13 @@ def rootListToDataFrame(root_list, config={}):
                     "Merges": "BAD ID",
                     "Total Edits": "BAD ID",
                     "Editors": "BAD ID",
+                    "Cell Identification": "BAD ID",
                     "Current": "BAD ID",
                 },
                 index=[0],
             ).astype(str)
 
+        # adds row to output df for the results of each id #
         output_df = pd.concat([output_df, row_df])
 
     return output_df

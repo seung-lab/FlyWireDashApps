@@ -5,4 +5,4 @@ import dash_bootstrap_components as dbc
 
 # Set this to an empty list if you are not using any external sheets
 external_stylesheets = [dbc.themes.YETI]
-# external_stylesheets = [dbc.themes.BOOTSTRAP]
+# external_stylesheets = [dbc.themes.BOOTSTRAP] currently unused choice

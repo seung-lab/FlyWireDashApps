@@ -8,6 +8,13 @@ from .utils import *
 
 
 def register_callbacks(app, config=None):
+    """Set up callbacks to be passed to app.
+
+    Keyword Arguments:
+    app -- the app itself
+    config -- dictionary of config settings (dict, default None)
+    """
+
     # defines callback that generates main tables and violin plots #
     @app.callback(
         Output("post_submit_download__summary", "children"),
@@ -32,6 +39,7 @@ def register_callbacks(app, config=None):
     )
     def update_output(n_clicks, query_id, cleft_thresh, timestamp, filter_list):
         """Create summary and partner tables with violin plots for queried root id.
+
         Keyword arguments:
         n_clicks -- tracks clicks for submit button
         query_id -- root id of queried neuron as int
@@ -173,6 +181,7 @@ def register_callbacks(app, config=None):
                 1,
                 "",
             ]
+
         # FRESHNESS CHECKER TEMPORARILY DISABLED #
         # # handles bad return from freshness checker #
         # try:
@@ -269,6 +278,7 @@ def register_callbacks(app, config=None):
         else:
             pass
 
+        # creates partner dataframes, violin plots, and pie charts #
         up_df = makePartnerDataFrame(
             root_id,
             cleft_thresh,
@@ -326,7 +336,11 @@ def register_callbacks(app, config=None):
         up_data = up_df.to_dict("records")
         down_data = down_df.to_dict("records")
 
-        # builds list of figures to pass to children of graph_div #
+        # changes root id column to markdown format so they can be made links #
+        up_cols[0]["presentation"] = "markdown"
+        down_cols[0]["presentation"] = "markdown"
+
+        # builds list of figures to pass to children of graph_div using violin and pie charts #
         figs = [
             html.Div(
                 dcc.Graph(id="incoming_figure", figure=up_violin,),
@@ -346,7 +360,7 @@ def register_callbacks(app, config=None):
             ),
         ]
 
-        # creates layout for linkbuilder buttons #
+        # creates layout for linkbuilder buttons that appear only after an initial query #
         post_div_linkbuttons = [
             html.Div(
                 [
@@ -366,12 +380,6 @@ def register_callbacks(app, config=None):
                             "vertical-align": "top",
                         },
                     ),
-                    # unused colorblind option checkbox #
-                    # dbc.Checklist(
-                    #     options=[{"label": "Colorblind", "value": True},],
-                    #     value=[False],
-                    #     id="cb_input",
-                    # ),
                     # defines link button loader #
                     html.Div(
                         dcc.Loading(id="link_loader", type="default", children=""),
@@ -502,7 +510,6 @@ def register_callbacks(app, config=None):
             ),
             dcc.Download(id="summary_download"),
         ]
-
         # creates layout for upstream downloader #
         post_up = [
             # defines upstream downloader #
@@ -524,7 +531,6 @@ def register_callbacks(app, config=None):
             ),
             dcc.Download(id="upstream_download"),
         ]
-
         # creates layout for downstream downloader #
         post_down = [
             # defines downstream downloader #
@@ -549,10 +555,11 @@ def register_callbacks(app, config=None):
 
         # sets end time #
         end_time = time.time()
+
         # calculates elapsed time #
         elapsed_time = str(round(end_time - start_time))
 
-        # relays time information #
+        # creates string containing time information #
         message_text = (
             "Connectivity query completed in "
             + elapsed_time
@@ -597,14 +604,15 @@ def register_callbacks(app, config=None):
         up_rows, down_rows, query_data, up_data, down_data, cleft_thresh, timestamp
     ):
         """Create neuroglancer link using selected partners.
+
         Keyword arguments:
-        up_rows -- list of selected upstream row indices
-        down_rows -- list of selected downstream row indices
-        query_data -- dataframe of summary table data
-        up_data -- dataframe of incoming table data
-        down_data -- dataframe of outgoing table data
-        cleft_thresh -- float value of cleft threshold field
-        timestamp -- str format utc timestamp
+        up_rows -- selected upstream row indices (list)
+        down_rows -- selected downstream row indices (list)
+        query_data -- summary table data (dataframe)
+        up_data -- incoming table data (dataframe)
+        down_data -- outgoing table data (dataframe)
+        cleft_thresh -- value of cleft threshold field (float)
+        timestamp -- utc timestamp as datetime or unix (str)
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #
@@ -617,17 +625,22 @@ def register_callbacks(app, config=None):
         query_out = [query_data[0]["Root ID"]]
 
         # checks if partners are selected, gets their ids if so #
+        # markdown has to be converted back to int #
         if up_rows == [] or up_rows == None:
             up_out = [0]
         else:
-            up_out = [up_data[x]["Upstream Partner ID"] for x in up_rows]
+            up_out = markdownToInt([up_data[x]["Upstream Partner ID"] for x in up_rows])
         if down_rows == [] or down_rows == None:
             down_out = [0]
         else:
-            down_out = [down_data[x]["Downstream Partner ID"] for x in down_rows]
+            down_out = markdownToInt(
+                [down_data[x]["Downstream Partner ID"] for x in down_rows]
+            )
 
+        # makes list of nucleus coordinates for query neuron #
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
+        # builds url #
         out_url = buildLink(
             query_out,
             up_out,
@@ -653,9 +666,11 @@ def register_callbacks(app, config=None):
     )
     def clearSelected(n_clicks):
         """Clear table selections.
+
         Keyword arguments:
-        n_clicks -- tracks clicks for clear button
+        n_clicks -- unused trigger that tracks clicks for clear button
         """
+
         return [
             None,
             None,
@@ -674,48 +689,82 @@ def register_callbacks(app, config=None):
     )
     def downloadSummary(n_clicks, table_data):
         """Download summary table as csv file.
+
         Keyword arguments:
-        n_clicks -- tracks clicks for download button
+        n_clicks -- unused trigger that tracks clicks for download button
         table_data -- data from summary table
         """
 
+        root_id = str(table_data[0]["Root ID"])
+        out_name = root_id + "_summary_table.csv"
+
         summary_df = pd.DataFrame(table_data)
-        return dcc.send_data_frame(summary_df.to_csv, "summary_table.csv")
+        if "[" in summary_df.loc[0, "Nucleus Coordinates"][0]:
+            summary_df.loc[0, "Nucleus Coordinates"] = [
+                int(x.strip())
+                for x in summary_df.loc[0, "Nucleus Coordinates"][1:-1].split(",")
+            ]
+        return dcc.send_data_frame(summary_df.to_csv, out_name)
 
     # defines callback to download upstream table as csv on button press #
     @app.callback(
         Output("upstream_download", "data"),
         Input("upstream_download_button", "n_clicks"),
         State("incoming_table", "data"),
+        State("summary_table", "data"),
         prevent_initial_call=True,
     )
-    def downloadUpstream(n_clicks, table_data):
+    def downloadUpstream(n_clicks, table_data, summary_data):
         """Download upstream table as csv file.
+
         Keyword arguments:
-        n_clicks -- tracks clicks for download button
+        n_clicks -- unused trigger that tracks clicks for download button
         table_data -- data from upstream table
+        summary_data -- data from summary table
         """
 
+        root_id = str(summary_data[0]["Root ID"])
+        out_name = root_id + "_upstream_partner_table.csv"
+
+        # converts table data to dataframe #
         upstream_df = pd.DataFrame(table_data)
-        return dcc.send_data_frame(upstream_df.to_csv, "upstream_table.csv")
+
+        # converts markdown back into int root id #
+        upstream_df["Upstream Partner ID"] = [
+            x[1:19] for x in upstream_df["Upstream Partner ID"]
+        ]
+
+        return dcc.send_data_frame(upstream_df.to_csv, out_name)
 
     # defines callback to download downstream table as csv on button press #
     @app.callback(
         Output("downstream_download", "data"),
         Input("downstream_download_button", "n_clicks"),
         State("outgoing_table", "data"),
+        State("summary_table", "data"),
         prevent_initial_call=True,
     )
-    def downloadDownstream(n_clicks, table_data):
+    def downloadDownstream(n_clicks, table_data, summary_data):
         """Download downstream table as csv file.
+
         Keyword arguments:
-        n_clicks -- tracks clicks for download button
+        n_clicks -- unused trigger that tracks clicks for download button
         table_data -- data from downstream table
+        summary_data -- data from summary table
         """
 
+        root_id = str(summary_data[0]["Root ID"])
+        out_name = root_id + "_downstream_partner_table.csv"
+
+        # converts table data to dataframe #
         downstream_df = pd.DataFrame(table_data)
-        downstream_df.head()
-        return dcc.send_data_frame(downstream_df.to_csv, "downstream_table.csv")
+
+        # converts markdown back into normal root id #
+        downstream_df["Downstream Partner ID"] = [
+            x[1:19] for x in downstream_df["Downstream Partner ID"]
+        ]
+
+        return dcc.send_data_frame(downstream_df.to_csv, out_name)
 
     # defines callback that generates partner app link  #
     @app.callback(
@@ -736,14 +785,15 @@ def register_callbacks(app, config=None):
         in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh,
     ):
         """Create partner app link using selected IDs.
+
         Keyword arguments:
-        in_rows -- list of selected incoming row indices
-        out_rows -- list of selected outgoing row indices
-        sum_data -- dataframe of summary table data
-        in_data -- dataframe of incoming table data
-        out_data -- dataframe of outgoing table data
-        timestamp -- str format utc timestamp as datetime or unix
-        cleft_thresh -- float value of cleft score threshold
+        in_rows -- selected incoming row indices (list)
+        out_rows -- selected outgoing row indices (list)
+        sum_data -- summary table data (dataframe)
+        in_data -- incoming table data (dataframe)
+        out_data -- outgoing table data (dataframe)
+        timestamp -- utc timestamp as datetime or unix (str)
+        cleft_thresh -- value of cleft threshold field (float)
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #
@@ -753,8 +803,11 @@ def register_callbacks(app, config=None):
             timestamp = strToDatetime(timestamp)
 
         # generates root list using table data and selected rows #
-        in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
-        out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        # has to convert markdown back to int format #
+        in_list = markdownToInt([in_data[x]["Upstream Partner ID"] for x in in_rows])
+        out_list = markdownToInt(
+            [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        )
         sum_list = [sum_data[0]["Root ID"]]
         full_list = in_list + out_list
 
@@ -767,6 +820,7 @@ def register_callbacks(app, config=None):
             pass
         elif len(full_list) > 2:
             return ["", "Select only 1-2 neurons to port to Partner App", ""]
+
         # builds url using portUrl function #
         out_url = portUrl(
             str(full_list)[1:-1],
@@ -791,21 +845,23 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makeSumLink(
-        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh,
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh, filter_list
     ):
-        """Create partner app link using selected IDs.
+        """Create summary app link using selected IDs.
+        
         Keyword arguments:
-        in_rows -- list of selected incoming row indices
-        out_rows -- list of selected outgoing row indices
-        sum_data -- dataframe of summary table data
-        in_data -- dataframe of incoming table data
-        out_data -- dataframe of outgoing table data
-        cleft_thresh -- float value of cleft score threshold
-        timestamp -- str format utc timestamp as datetime or unix
-        filter_list -- str list of root ids to filter results by
+        in_rows -- selected incoming row indices (list)
+        out_rows -- selected outgoing row indices (list)
+        sum_data -- summary table data (dataframe)
+        in_data -- incoming table data (dataframe)
+        out_data -- outgoing table data (dataframe)
+        timestamp -- utc timestamp as datetime or unix (str)
+        cleft_thresh -- value of cleft threshold field (float)
+        filter_list -- list of root ids to filter results by (str)
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #
@@ -815,14 +871,18 @@ def register_callbacks(app, config=None):
             timestamp = strToDatetime(timestamp)
 
         # generates root list using table data and selected rows #
-        in_list = [in_data[x]["Upstream Partner ID"] for x in in_rows]
-        out_list = [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        # has to convert markdown back to int format #
+        in_list = markdownToInt([in_data[x]["Upstream Partner ID"] for x in in_rows])
+        out_list = markdownToInt(
+            [out_data[x]["Downstream Partner ID"] for x in out_rows]
+        )
         sum_list = [sum_data[0]["Root ID"]]
         full_list = sum_list + in_list + out_list
 
         # handles errors #
         if len(full_list) > 20:
             return ["", "Select 20 or fewer neurons to port to Summary App", ""]
+
         # builds url using portUrl function #
         out_url = portUrl(
             str(full_list)[1:-1],
@@ -846,14 +906,14 @@ def register_callbacks(app, config=None):
         State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
     )
     def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp, filter_list):
-        """Create neuroglancer link with all partner synapses.
+        """Create link with all synapses on queried neuron.
 
         Keyword arguments:
-        n_clicks -- unused trigger
-        query_data -- dataframe of summary table data
-        cleft_thresh -- float value of cleft score threshold
-        timestamp -- str format utc timestamp as datetime or unix
-        filter_list -- str list of root ids to filter results by
+        n_clicks -- unused trigger that tracks number of times submit button is pressed
+        query_data -- summary table data (dataframe)
+        cleft_thresh -- value of cleft threshold field (float)
+        timestamp -- utc timestamp as datetime or unix (str)
+        filter_list -- list of root ids to filter results by (str)
         """
 
         # if filter list exists, converts to tuple of ints #
@@ -873,8 +933,10 @@ def register_callbacks(app, config=None):
         # gets id of queried neuron from table #
         query_out = [query_data[0]["Root ID"]]
 
+        # sets nucleus coordinates #
         nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
+        # builds url #
         out_url = buildAllsynLink(
             query_out,
             cleft_thresh,
