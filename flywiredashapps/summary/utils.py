@@ -119,8 +119,8 @@ def buildSummaryLink(root_list, nuc_dict, cb=False, config={}):
 
     # sets view anchor location and zoom level #
     view_options = {
-        "position": [119412, 62016, 3539,],
-        "zoom_3d": 10000,
+        "position": [29853, 15504, 3539,],
+        "zoom_3d": 1000,
     }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
@@ -197,11 +197,12 @@ def coordsToRoot(coords, config={}):
     return root_result
 
 
-def getNuc(root_id, config={}):
+def getNuc(root_id, res, config={}):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
     root_id -- root or nucleus id (listed str)
+    res -- x,y,z resolution of volume in nm/voxel, e.g. [16,16,40] (list of ints)
     config -- config settings (dict, default {})
     """
 
@@ -220,8 +221,9 @@ def getNuc(root_id, config={}):
         materialization_version=mat_vers,
     )
 
-    # converts nucleus coordinates from n to 4x4x40 resolution #
-    nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]]
+    # converts nucleus coordinates from nm to 4x4x40 resolution #
+    nuc_df["pt_position"] = [nmToRes(i,res) for i in nuc_df["pt_position"]]
+    # nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]] ORIGINAL
 
     # creates output df using root, nuc id, and coords to keep aligned #
     out_df = pd.DataFrame(
@@ -234,6 +236,17 @@ def getNuc(root_id, config={}):
 
     return out_df.astype(str)
 
+def getResolution():
+    # sets cloud volume #
+    cv = cloudvolume.CloudVolume(
+        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+        use_https=True,
+    )
+
+    # determines resolution of volume (important for nucleus coords)#
+    res = cv.resolution
+
+    return res
 
 def getTypes(root_id, config={}):
     """Query cell type table and return str-format list of unique values.
@@ -303,11 +316,28 @@ def inputToRootList(input_str, config={}):
     return root_list
 
 
+def nmToRes(coords, res):
+    """Convert 1,1,1 nm coordinates to desired resolution.
+
+    Keyword arguments:
+    coords -- x,y,z coordinates in 1,1,1 nm resolution (list of ints)
+    res -- desired x,y,z resolution in nm/voxel, e.g. 16,16,40 (list of ints)
+    """
+
+    # converts coordinates using volume resolution #
+    cv_xyz = [
+        int(coords[0] / (res[0])),
+        int(coords[1] / (res[1])),
+        int(coords[2] / (res[2])),
+    ]
+
+    return cv_xyz
+
 def nmToNG(coords):
     """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
 
     Keyword arguments:
-    coords -- x,y,z coordinates as ints in 1,1,1 nm resolution (list of ints)
+    coords -- x,y,z coordinates in 1,1,1 nm resolution (list of ints)
     """
     coords[0] /= 4
     coords[1] /= 4
@@ -395,6 +425,9 @@ def rootListToDataFrame(root_list, config={}):
         ]
     )
 
+    # gets resolution of volume (important for nucleus coordinates)
+    res = getResolution()
+
     # generates df row and adds to output df for each root id #
     for i in root_list:
 
@@ -423,7 +456,7 @@ def rootListToDataFrame(root_list, config={}):
                 proofreaders = "n/a"
 
             # gets nucleus information #
-            row_df = getNuc(i, config)
+            row_df = getNuc(i, res, config)
 
             # handles segments without nuclei #
             if row_df.empty:
