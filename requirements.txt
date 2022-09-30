@@ -6,4 +6,5 @@ plotly
 nglui
 annotationframeworkclient
 dash
-dash_bootstrap_components
+dash-bootstrap-components
+dash-cytoscape
