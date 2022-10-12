@@ -81,12 +81,15 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
             timestamp=timestamp,
         )
 
+    # sets resolution of volume #
+    res = getResolution()
+
     if len(up_syns_df) > 0:
         # makes truncated df of pre & post coords #
         up_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in up_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in up_syns_df["post_pt_position"]],
+                "pre": [nmToNG(x, res) for x in up_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x, res) for x in up_syns_df["post_pt_position"]],
             }
         )
     else:
@@ -95,8 +98,8 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
         # makes truncated df of pre & post coords #
         down_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in down_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in down_syns_df["post_pt_position"]],
+                "pre": [nmToNG(x, res) for x in down_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x, res) for x in down_syns_df["post_pt_position"]],
             }
         )
     else:
@@ -267,12 +270,15 @@ def buildLink(
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
 
+    # gets volume resolution #
+    res = getResolution()
+
     if len(up_syns_df) > 0:
         # makes truncated df of pre & post coords #
         up_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in up_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in up_syns_df["post_pt_position"]],
+                "pre": [nmToNG(x, res) for x in up_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x, res) for x in up_syns_df["post_pt_position"]],
             }
         )
     else:
@@ -281,8 +287,8 @@ def buildLink(
         # makes truncated df of pre & post coords #
         down_coords_df = pd.DataFrame(
             {
-                "pre": [nmToNG(x) for x in down_syns_df["pre_pt_position"]],
-                "post": [nmToNG(x) for x in down_syns_df["post_pt_position"]],
+                "pre": [nmToNG(x, res) for x in down_syns_df["pre_pt_position"]],
+                "post": [nmToNG(x, res) for x in down_syns_df["post_pt_position"]],
             }
         )
     else:
@@ -411,7 +417,7 @@ def datetimeToUnix(stamp):
     return calendar.timegm(stamp.utctimetuple())
 
 
-def getNuc(root_id, config={}, timestamp=None):
+def getNuc(root_id, res, config={}, timestamp=None):
     """Build a dataframe of nucleus table data in string format.
 
     Keyword arguments:
@@ -442,7 +448,7 @@ def getNuc(root_id, config={}, timestamp=None):
         return out_df.astype(str)
 
     # converts nucleus coordinates from n to 4x4x40 resolution #
-    nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]]
+    nuc_df["pt_position"] = [nmToNG(i, res) for i in nuc_df["pt_position"]]
 
     # creates output df using root, nuc id, and coords to keep aligned #
     out_df = pd.DataFrame(
@@ -454,6 +460,19 @@ def getNuc(root_id, config={}, timestamp=None):
     )
 
     return out_df.astype(str)
+
+
+def getResolution():
+    # sets cloud volume #
+    cv = cloudvolume.CloudVolume(
+        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+        use_https=True,
+    )
+
+    # determines resolution of volume (important for nucleus coords)#
+    res = cv.resolution
+
+    return res
 
 
 @lru_cache(maxsize=None)
@@ -1169,8 +1188,11 @@ def makeSummaryDataFrame(
         filter_list=filter_list,
     )
 
+    # sets volume resolution #
+    res = getResolution()
+
     # makes df of query nucleus, upstream and downstream synapses #
-    nuc_df = getNuc(root_id, config=config, timestamp=timestamp,)
+    nuc_df = getNuc(root_id, res, config=config, timestamp=timestamp,)
     up_df = up_query[0]
     down_df = down_query[0]
 
@@ -1307,17 +1329,22 @@ def markdownToInt(root_list):
     return output_list
 
 
-def nmToNG(coords):
-    """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
+def nmToNG(coords, res):
+    """Convert 1,1,1 nm coordinates to desired resolution.
 
     Keyword arguments:
     coords -- x,y,z coordinates in 1,1,1 nm resolution (list of ints)
+    res -- desired x,y,z resolution in nm/voxel, e.g. 16,16,40 (list of ints)
     """
-    coords[0] /= 4
-    coords[1] /= 4
-    coords[2] /= 40
-    coords = [int(i) for i in coords]
-    return coords
+
+    # converts coordinates using volume resolution #
+    cv_xyz = [
+        int(coords[0] / (res[0])),
+        int(coords[1] / (res[1])),
+        int(coords[2] / (res[2])),
+    ]
+
+    return cv_xyz
 
 
 def nucToRoot(nuc_id, config={}, timestamp=None):
@@ -1437,9 +1464,12 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
         "nuclei_v1", filter_in_dict={"pt_root_id": roots}, timestamp=timestamp,
     )
 
-    # converts nucleus coordinates from nm to 4x4x40 resolution #
+    #sets volume resolution #
+    res = getResolution()
+
+    # converts nucleus coordinates from nm to volume resolution #
     nuc_coords_df = pd.DataFrame(
-        {"pt_position": [nmToNG(i) for i in nuc_df["pt_position"]]}
+        {"pt_position": [nmToNG(i, res) for i in nuc_df["pt_position"]]}
     )
 
     return nuc_coords_df
