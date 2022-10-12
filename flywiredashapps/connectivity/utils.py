@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 import datetime
+import time
 import calendar
 import datetime
 from nglui.statebuilder import *
@@ -94,6 +95,7 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
         )
     else:
         up_coords_df = pd.DataFrame()
+
     if len(down_syns_df) > 0:
         # makes truncated df of pre & post coords #
         down_coords_df = pd.DataFrame(
@@ -145,6 +147,9 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
             [up_coords_df, down_coords_df, nuc_coords_df], return_as="json",
         )
     )
+
+    # TEMPORARY DEBUG PRINT #
+    # print("STATE JSON:",state_json)
 
     # feeds state_json into state uploader to set the value of 'new_id' #
     new_id = client.state.upload_state_json(state_json)
@@ -463,16 +468,19 @@ def getNuc(root_id, res, config={}, timestamp=None):
 
 
 def getResolution():
-    # sets cloud volume #
-    cv = cloudvolume.CloudVolume(
-        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
-        use_https=True,
-    )
+    # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
+    # # sets cloud volume #
+    # cv = cloudvolume.CloudVolume(
+    #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+    #     use_https=True,
+    # )
 
-    # determines resolution of volume (important for nucleus coords)#
-    res = cv.resolution
+    # # determines resolution of volume (important for nucleus coords)#
+    # res = cv.resolution
 
-    return res
+    # return res
+    return [16, 16, 40]
+
 
 
 @lru_cache(maxsize=None)
@@ -877,11 +885,23 @@ def idConvert(id_val, config, timestamp=None):
 
     # converts nucleus id to root id #
     if len(str(id_val)) == 7:
-        id_val = nucToRoot(id_val, config=config, timestamp=timestamp)
+        try:
+            id_val = nucToRoot(id_val, config=config, timestamp=timestamp)
+            if id_val == 0:
+                return "invalid nuc id"
+        except:
+            return "invalid nuc id"
 
     # returns 0 if the length of the id isn't 18 digits #
     if len(str(id_val)) == 18:
-        return id_val
+        try:
+            # uses freshness checker to test if id is valid or not #
+            checkFreshness(id_val, config, timestamp)
+            # if id is valid, returns id #
+            return id_val
+        except:
+            # if id isn't valid, returns error #
+            return "invalid root id"
     else:
         return 0
 

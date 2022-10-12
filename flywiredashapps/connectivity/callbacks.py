@@ -161,10 +161,20 @@ def register_callbacks(app, config=None):
             pass
 
         # handles bad IDs if idConvert fails #
-        try:
-            # converts id input to root id #
-            root_id = idConvert(query_id, config=config, timestamp=timestamp)
-        except:
+
+        # converts id input to root id #
+        root_id = idConvert(query_id, config=config, timestamp=timestamp)
+
+        # sets failure message if idConvert fails
+        if root_id == 0:
+            message = "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution."
+        elif root_id == "invalid nuc id":
+            message = "Nucleus ID is invalid, please check it and try again."
+        elif root_id == "invalid root id":
+            message = "Root ID is invalid, please check it and try again."
+
+        # returns specific error message if idConvert fails #
+        if len(str(root_id)) != 18:
             return [
                 no_update,
                 no_update,
@@ -177,7 +187,7 @@ def register_callbacks(app, config=None):
                 no_update,
                 no_update,
                 no_update,
-                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
+                message,
                 1,
                 "",
             ]
@@ -778,11 +788,11 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
-        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
+        # State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makePartLink(
-        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh,
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
     ):
         """Create partner app link using selected IDs.
 
