@@ -237,16 +237,18 @@ def getNuc(root_id, res, config={}):
     return out_df.astype(str)
 
 def getResolution():
-    # sets cloud volume #
-    cv = cloudvolume.CloudVolume(
-        "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
-        use_https=True,
-    )
+    # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
+    # # sets cloud volume #
+    # cv = cloudvolume.CloudVolume(
+    #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+    #     use_https=True,
+    # )
 
-    # determines resolution of volume (important for nucleus coords)#
-    res = cv.resolution
+    # # determines resolution of volume (important for nucleus coords)#
+    # res = cv.resolution
 
-    return res
+    # return res
+    return [16, 16, 40]
 
 def getTypes(root_id, config={}):
     """Query cell type table and return str-format list of unique values.
