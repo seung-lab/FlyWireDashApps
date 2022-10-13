@@ -163,7 +163,7 @@ def register_callbacks(app, config=None):
 
         # sets url for nt key image #
         key_image = html.Img(
-            src="https://raw.githubusercontent.com/seung-lab/FlyWireDashApps/network-graph-app/flywiredashapps/network_graph/nt_key_horiz.png"
+            src="https://raw.githubusercontent.com/seung-lab/FlyWireDashApps/main/flywiredashapps/network_graph/nt_key_horiz.png"
         )
 
         return [post_submit, key_image, message, message_rows, ""]
