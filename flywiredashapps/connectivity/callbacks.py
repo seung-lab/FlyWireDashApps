@@ -193,47 +193,47 @@ def register_callbacks(app, config=None):
             ]
 
         # FRESHNESS CHECKER TEMPORARILY DISABLED #
-        # # handles bad return from freshness checker #
-        # try:
-        #     fresh = checkFreshness(root_id, config=config, timestamp=timestamp)
-        # except:
-        #     return [
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 4x4x40nm resolution.",
-        #         1,
-        #         "",
-        #     ]
+        # handles bad return from freshness checker #
+        try:
+            fresh = checkFreshness(root_id, config=config, timestamp=timestamp)
+        except:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                "Entry must be 18-digit root id, 7-digit nucleus id, or x,y,z coordinates in 16x16x40nm resolution.",
+                1,
+                "",
+            ]
 
-        # # handles outdated ids #
-        # if fresh == False:
-        #     return [
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         no_update,
-        #         "Root ID is outdated, please refresh the segment or use x,y,z coordinates in 4x4x40nm resolution.",
-        #         1,
-        #         "",
-        #     ]
-        # else:
-        #     pass
+        # handles outdated ids #
+        if fresh == False:
+            return [
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                "Root ID is outdated or not valid at the given timestamp, please refresh the segment or use x,y,z coordinates in 16x16x40nm resolution.",
+                1,
+                "",
+            ]
+        else:
+            pass
 
         # handles 0 ids if they somehow make it through all previous filters #
         if root_id == 0:
