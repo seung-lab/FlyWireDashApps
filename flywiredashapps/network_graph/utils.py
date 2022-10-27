@@ -77,6 +77,7 @@ def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
     config -- config settings (dict, default {})
     """
 
+
     # converts list items to integers if not already #
     if type(root_list[0]) != int:
         root_list = [int(x) for x in root_list]
@@ -169,7 +170,7 @@ def inputToRootList(input_str, config={}, timestamp=None):
     """Convert input string into list of str root ids.
 
     Keyword arguments:
-    input_str -- ids or 4,4,40nm coords separated by commas (str)
+    input_str -- ids or 16,16,40nm coords separated by commas (str)
     config -- config settings (dict, default {})
     timestamp -- utc timestamp (datetime object, default None)
     """
@@ -202,12 +203,15 @@ def inputToRootList(input_str, config={}, timestamp=None):
     outdated_entries = []
     fresh_entries = []
 
-    # checks each id for freshness at the given timestamp #
     for i in root_list:
-        if checkFreshness(i, config, timestamp) == False:
-            outdated_entries.append(i)
-        elif checkFreshness(i, config, timestamp) == True:
-            fresh_entries.append(i)
+        try:
+            fresh = checkFreshness(i, config, timestamp)
+            if fresh == True:
+                fresh_entries.append(i)
+            elif fresh == False:
+                outdated_entries.append(i)
+        except:
+            removed_entries.append(i)
 
     return [fresh_entries, removed_entries, outdated_entries]
 
@@ -238,3 +242,40 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
         root_id = None
 
     return root_id
+
+def strToDatetime(string_timestamp):
+    """Convert string timestamp to datetime object.
+    
+    Keyword Arguments:
+    string_timestamp -- timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC (str)
+    """
+
+    # converts if unix #
+    if len(string_timestamp) == 10 and string_timestamp.isnumeric():
+        out_stamp = unixToDatetime(int(string_timestamp))
+    else:
+        # converts if datetime #
+        try:
+            out_stamp = datetime.datetime.strptime(
+                string_timestamp, "%Y-%m-%d %H:%M:%S"
+            )
+        # corrects for removal of space by url helper #
+        except:
+            try:
+                string_timestamp = string_timestamp[0:10] + " " + string_timestamp[10:]
+                out_stamp = datetime.datetime.strptime(
+                    string_timestamp, "%Y-%m-%d %H:%M:%S"
+                )
+            # returns None if formatting still incorrect #
+            except:
+                out_stamp = None
+
+    return out_stamp
+
+def unixToDatetime(stamp):
+    """Convert unix timestamp to datetime object.
+    
+    Keyword Arguments:
+    stamp -- unix timestamp
+    """
+    return datetime.datetime.fromtimestamp(stamp)

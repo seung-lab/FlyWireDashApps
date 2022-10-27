@@ -49,14 +49,24 @@ def register_callbacks(app, config=None):
         # records start time #
         start_time = time.time()
 
-        # if no timestamp provided, sets to current time #
+        # converts string timestamp to datetime object if present, otherwise sets to current time #
         if timestamp == None:
-            timestamp = datetime.datetime.utcnow()
+            timestamp == datetime.datetime.utcnow()
+        else:
+            timestamp = strToDatetime(timestamp)
+
+        # # if no timestamp provided, sets to current time #
+        # if timestamp == None:
+        #     timestamp = datetime.datetime.utcnow()
 
         # converts string input to list of string ids, removes bad ids into separate list #
         id_list, removed_list, outdated_list = inputToRootList(
             id_list, config, timestamp
         )
+
+        print("ID LIST:",id_list)
+        print("REMOVED LIST:",removed_list)
+        print("OUTDATED LIST:",outdated_list)
 
         # gets connectivity data for id list and info about removed synapses #
         raw_connectivity_dict, filter_message = getSynDoD(
