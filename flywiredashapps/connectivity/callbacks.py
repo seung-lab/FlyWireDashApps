@@ -399,33 +399,34 @@ def register_callbacks(app, config=None):
                             "width": "1000px",
                         },
                     ),
-                    # defines all-synapse link generation button #
-                    dbc.Button(
-                        "Generate NG Link with All Synapses",
-                        id="allsyn_link_button",
-                        n_clicks=0,
-                        target="tab",
-                        style={
-                            "margin-top": "5px",
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "margin-bottom": "5px",
-                            "width": "420px",
-                            "display": "inline-block",
-                            "vertical-align": "top",
-                        },
-                    ),
-                    # defines all-synapse link button loader #
-                    html.Div(
-                        dcc.Loading(
-                            id="allsyn_link_loader", type="default", children="",
-                        ),
-                        style={
-                            "margin-right": "5px",
-                            "margin-left": "5px",
-                            "width": "1000px",
-                        },
-                    ),
+                    # # defines all-synapse link generation button # 
+                    # TEMPORARILY DISABLED DUE TO JSON CUTOFF #
+                    # dbc.Button(
+                    #     "Generate NG Link with All Synapses",
+                    #     id="allsyn_link_button",
+                    #     n_clicks=0,
+                    #     target="tab",
+                    #     style={
+                    #         "margin-top": "5px",
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "margin-bottom": "5px",
+                    #         "width": "420px",
+                    #         "display": "inline-block",
+                    #         "vertical-align": "top",
+                    #     },
+                    # ),
+                    # # defines all-synapse link button loader #
+                    # html.Div(
+                    #     dcc.Loading(
+                    #         id="allsyn_link_loader", type="default", children="",
+                    #     ),
+                    #     style={
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "width": "1000px",
+                    #     },
+                    # ),
                     # defines Summary App link button loader #
                     html.Div(
                         dcc.Loading(
@@ -905,58 +906,59 @@ def register_callbacks(app, config=None):
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Summary App", ""]
 
-    # defines callback that generates allsyn neuroglancer link #
-    @app.callback(
-        Output("allsyn_link_button", "href",),
-        Output("allsyn_link_loader", "children",),
-        Input("submit_button", "n_clicks"),
-        State("summary_table", "data",),
-        State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
-        State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
-        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
-    )
-    def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp, filter_list):
-        """Create link with all synapses on queried neuron.
+    # # defines callback that generates allsyn neuroglancer link # 
+    # TEMPORARILY DISABLED DUE TO JSON CUTOFF ISSUE #
+    # @app.callback(
+    #     Output("allsyn_link_button", "href",),
+    #     Output("allsyn_link_loader", "children",),
+    #     Input("submit_button", "n_clicks"),
+    #     State("summary_table", "data",),
+    #     State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value",),
+    #     State({"type": "url_helper", "id_inner": "timestamp_field"}, "value",),
+    #     State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
+    # )
+    # def makeAllsynLink(n_clicks, query_data, cleft_thresh, timestamp, filter_list):
+    #     """Create link with all synapses on queried neuron.
 
-        Keyword arguments:
-        n_clicks -- unused trigger that tracks number of times submit button is pressed
-        query_data -- summary table data (dataframe)
-        cleft_thresh -- value of cleft threshold field (float)
-        timestamp -- utc timestamp as datetime or unix (str)
-        filter_list -- list of root ids to filter results by (str)
-        """
+    #     Keyword arguments:
+    #     n_clicks -- unused trigger that tracks number of times submit button is pressed
+    #     query_data -- summary table data (dataframe)
+    #     cleft_thresh -- value of cleft threshold field (float)
+    #     timestamp -- utc timestamp as datetime or unix (str)
+    #     filter_list -- list of root ids to filter results by (str)
+    #     """
 
-        # if filter list exists, converts to tuple of ints #
-        if filter_list != None and filter_list != []:
-            filter_list = filter_list.strip("[")
-            filter_list = filter_list.strip("]")
-            filter_list = filter_list.split(",")
-            filter_list = [int(x.strip(" ")) for x in filter_list]
-            # sorts list and converts to a tuple for hashability #
-            filter_list.sort()
-            filter_list = tuple(filter_list)
-        elif filter_list == []:
-            filter_list = None
-        else:
-            pass
+    #     # if filter list exists, converts to tuple of ints #
+    #     if filter_list != None and filter_list != []:
+    #         filter_list = filter_list.strip("[")
+    #         filter_list = filter_list.strip("]")
+    #         filter_list = filter_list.split(",")
+    #         filter_list = [int(x.strip(" ")) for x in filter_list]
+    #         # sorts list and converts to a tuple for hashability #
+    #         filter_list.sort()
+    #         filter_list = tuple(filter_list)
+    #     elif filter_list == []:
+    #         filter_list = None
+    #     else:
+    #         pass
 
-        # gets id of queried neuron from table #
-        query_out = [query_data[0]["Root ID"]]
+    #     # gets id of queried neuron from table #
+    #     query_out = [query_data[0]["Root ID"]]
 
-        # sets nucleus coordinates #
-        nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
+    #     # sets nucleus coordinates #
+    #     nuc = query_data[0]["Nucleus Coordinates"][1:-1].split(",")
 
-        # builds url #
-        out_url = buildAllsynLink(
-            query_out,
-            cleft_thresh,
-            nuc,
-            config=config,
-            timestamp=timestamp,
-            filter_list=filter_list,
-        )
+    #     # builds url #
+    #     out_url = buildAllsynLink(
+    #         query_out,
+    #         cleft_thresh,
+    #         nuc,
+    #         config=config,
+    #         timestamp=timestamp,
+    #         filter_list=filter_list,
+    #     )
 
-        return [out_url, ""]
+    #     return [out_url, ""]
 
     pass
 
