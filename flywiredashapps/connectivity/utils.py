@@ -148,9 +148,6 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
         )
     )
 
-    # TEMPORARY DEBUG PRINT #
-    # print("STATE JSON:",state_json)
-
     # feeds state_json into state uploader to set the value of 'new_id' #
     new_id = client.state.upload_state_json(state_json)
 
@@ -195,6 +192,12 @@ def buildLink(
         query_color = "#ff00ff"  # magenta #
         down_color = "#00ffff"  # cyan #
 
+    # filters out 0 roots
+    if up_ids == [0]:
+        up_ids = []
+    if down_ids == [0]:
+        down_ids = []
+
     # builds id and color lists #
     id_list = query_id + up_ids + down_ids
     up_cols = [up_color] * len(up_ids)
@@ -222,7 +225,7 @@ def buildLink(
     )
 
     # creates dataframe to use for link building and handles single-partner choices #
-    if up_ids[0] != 0 and down_ids[0] != 0:
+    if up_ids != [] and down_ids != []:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
@@ -245,7 +248,7 @@ def buildLink(
                 timestamp=timestamp,
             )[0]
             down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
-    elif up_ids[0] == 0 and down_ids[0] != 0:
+    elif up_ids == [] and down_ids != []:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in down_ids:
@@ -258,7 +261,7 @@ def buildLink(
                 timestamp=timestamp,
             )[0]
             down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
-    elif up_ids[0] != 0 and down_ids[0] == 0:
+    elif up_ids != [] and down_ids == []:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
         for x in up_ids:
