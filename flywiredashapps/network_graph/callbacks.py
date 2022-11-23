@@ -19,7 +19,6 @@ def register_callbacks(app, config=None):
 
     # defines callback that generates main tables and violin plots #
     @app.callback(
-        # Output("post_submit_div", "style"),
         Output("post_submit_div", "children"),
         Output("key_div", "children"),
         Output("message_text", "value"),
@@ -55,18 +54,10 @@ def register_callbacks(app, config=None):
         else:
             timestamp = strToDatetime(timestamp)
 
-        # # if no timestamp provided, sets to current time #
-        # if timestamp == None:
-        #     timestamp = datetime.datetime.utcnow()
-
         # converts string input to list of string ids, removes bad ids into separate list #
         id_list, removed_list, outdated_list = inputToRootList(
             id_list, config, timestamp
         )
-
-        print("ID LIST:",id_list)
-        print("REMOVED LIST:",removed_list)
-        print("OUTDATED LIST:",outdated_list)
 
         # gets connectivity data for id list and info about removed synapses #
         raw_connectivity_dict, filter_message = getSynDoD(
@@ -75,6 +66,9 @@ def register_callbacks(app, config=None):
 
         # converts raw dict-of-dicts format into list of graph elements that can be read by cytoscape #
         graph_readable_elements = dictToElements(raw_connectivity_dict, conn_thresh)
+
+        # generates url for summary app link #
+        summary_link = genSumLink(id_list, config=config, timestamp=timestamp)
 
         # sets elements of post_submit_div to show graph #
         post_submit = [
@@ -102,11 +96,6 @@ def register_callbacks(app, config=None):
                             "width": "data(adjusted_weight)",
                         },
                     },
-                    # old method for setting edge weights manually, left in just in case we want to switch back #
-                    # {"selector": "[weight < 10]", "style": {"width": "1px",},},
-                    # {"selector": "[weight >= 10]", "style": {"width": "3px",},},
-                    # {"selector": "[weight >= 20]", "style": {"width": "5px",},},
-                    # {"selector": "[weight >= 100]", "style": {"width": "10px",},},
                     # sets color of edge to nt value #
                     {
                         "selector": "[nt = 'gaba']",
@@ -152,6 +141,22 @@ def register_callbacks(app, config=None):
                     },
                 ],
             ),
+            # defines Summary App link button #
+            dbc.Button(
+                "Send Neurons to Summary App",
+                id="summary_link_button",
+                n_clicks=0,
+                target="_blank",
+                style={
+                    "margin-top": "5px",
+                    "margin-right": "5px",
+                    "margin-left": "5px",
+                    "margin-bottom": "5px",
+                    "width": "420px",
+                    "vertical-align": "top",
+                },
+                href=summary_link,
+            ),
         ]
 
         # calculates total time #
@@ -177,4 +182,6 @@ def register_callbacks(app, config=None):
         )
 
         return [post_submit, key_image, message, message_rows, ""]
+
+        
 

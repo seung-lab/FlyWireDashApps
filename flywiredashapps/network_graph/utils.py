@@ -66,6 +66,37 @@ def dictToElements(input_data, conn_thresh):
 
     return directed_weighted_elements
 
+def genSumLink(id_list, timestamp=None, config={},):
+    """Create summary app link using ID list.
+        
+        Keyword arguments:
+        id_list -- input root IDs (list of str)
+        timestamp -- utc timestamp as datetime or unix (str, default None)
+        confige -- config settings (dict, default {})
+        """
+
+    # sets timestamp to current time if no input or converts string input to datetime #
+    if timestamp == None:
+        timestamp = datetime.datetime.utcnow().replace(microsecond=0)
+    else:
+        timestamp = strToDatetime(timestamp)
+
+    # gets base url for summary app from config #
+    base = config.get("sum_app_base_url", None)
+    
+    # converts id list to string, removes any spaces and apostrophes
+    id_list = str(id_list).replace("'", "").replace(" ", "")[1:-1]
+    
+    # builds url #
+    out_url = (
+        base
+        + "?input_field="
+        + id_list
+        + "&timestamp_field="
+        + str(timestamp).replace(" ", "")
+    )
+
+    return out_url
 
 def getSynDoD(root_list, cleft_thresh, config={}, timestamp=None):
     """Get number of synapses between each pair of ids, return as dict-of-dicts.
@@ -214,7 +245,6 @@ def inputToRootList(input_str, config={}, timestamp=None):
             removed_entries.append(i)
 
     return [fresh_entries, removed_entries, outdated_entries]
-
 
 def nucToRoot(nuc_id, config={}, timestamp=None):
     """Convert nucleus id to root id.
