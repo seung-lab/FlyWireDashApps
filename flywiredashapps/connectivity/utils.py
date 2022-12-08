@@ -53,6 +53,7 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
     query_id = [int(x) for x in query_id]
 
     # makes dfs of all synapses for query neuron #
+    # behavior when not using filter neurons #
     if filter_list == None:
         up_syns_df = client.materialize.query_table(
             "synapses_nt_v1",
@@ -64,6 +65,7 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
             filter_in_dict={"pre_pt_root_id": query_id},
             timestamp=timestamp,
         )
+    # behavior when using filter neurons #
     else:
         up_syns_df = client.materialize.query_table(
             "synapses_nt_v1",
@@ -472,6 +474,8 @@ def getNuc(root_id, res, config={}, timestamp=None):
 
 def getResolution():
     # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
+    # Issue is caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
+    # if ipv6 is switched on but no ipv6 connection exists, this code will try using ipv6 for ~84s before switching to ipv4 #
     # # sets cloud volume #
     # cv = cloudvolume.CloudVolume(
     #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
@@ -1416,6 +1420,18 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
         query = (
             "?input_field="
             + input_ids
+            + "&timestamp_field="
+            + str(timestamp).replace(" ", "")
+        )
+    # behavior for graph app porting #
+    elif app_choice == "graph":
+        base = config.get("graph_app_base_url", None)
+        input_ids = input_ids.replace("'", "").replace(" ", "")
+        query = (
+            "?input_field="
+            + input_ids
+            + "&cleft_thresh_field="
+            + cleft_thresh
             + "&timestamp_field="
             + str(timestamp).replace(" ", "")
         )

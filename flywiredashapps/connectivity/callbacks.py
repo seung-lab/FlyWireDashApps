@@ -453,6 +453,34 @@ def register_callbacks(app, config=None):
                             "vertical-align": "top",
                         },
                     ),
+                    # # defines Graph App link button loader #
+                    # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+                    # html.Div(
+                    #     dcc.Loading(
+                    #         id="graph_link_loader", type="default", children="",
+                    #     ),
+                    #     style={
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "width": "1000px",
+                    #     },
+                    # ),
+                    # # defines Graph App link generation button #
+                    # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+                    # dbc.Button(
+                    #     "Select Neuron to Port to Graph App",
+                    #     id="graph_link_button",
+                    #     n_clicks=0,
+                    #     target="_blank",
+                    #     style={
+                    #         "margin-top": "5px",
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "margin-bottom": "5px",
+                    #         "width": "420px",
+                    #         "vertical-align": "top",
+                    #     },
+                    # ),
                     # defines Partner App link button loader #
                     html.Div(
                         dcc.Loading(
@@ -789,7 +817,6 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
-        # State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makePartLink(
@@ -844,6 +871,67 @@ def register_callbacks(app, config=None):
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neurons to Partner App", ""]
 
+    # # defines callback that generates graph app link  #
+    # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+    # @app.callback(
+    #     Output("graph_link_button", "href",),
+    #     Output("graph_link_button", "children",),
+    #     Output("graph_link_loader", "children",),
+    #     Input("incoming_table", "selected_rows",),
+    #     Input("outgoing_table", "selected_rows",),
+    #     State("summary_table", "data",),
+    #     State("incoming_table", "data",),
+    #     State("outgoing_table", "data",),
+    #     State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
+    #     State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
+    #     prevent_initial_call=True,
+    # )
+    # def makeGraphLink(
+    #     in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
+    # ):
+    #     """Create graph app link using selected IDs.
+        
+    #     Keyword arguments:
+    #     in_rows -- selected incoming row indices (list)
+    #     out_rows -- selected outgoing row indices (list)
+    #     sum_data -- summary table data (dataframe)
+    #     in_data -- incoming table data (dataframe)
+    #     out_data -- outgoing table data (dataframe)
+    #     timestamp -- utc timestamp as datetime or unix (str)
+    #     cleft_thresh -- value of cleft threshold field (float)
+    #     """
+
+    #     # sets timestamp to current time if no input or converts string input to datetime #
+    #     if timestamp == None:
+    #         timestamp = getTime()
+    #     else:
+    #         timestamp = strToDatetime(timestamp)
+
+    #     # generates root list using table data and selected rows #
+    #     # has to convert markdown back to int format #
+    #     in_list = markdownToInt([in_data[x]["Upstream Partner ID"] for x in in_rows])
+    #     out_list = markdownToInt(
+    #         [out_data[x]["Downstream Partner ID"] for x in out_rows]
+    #     )
+    #     sum_list = [sum_data[0]["Root ID"]]
+    #     full_list = sum_list + in_list + out_list
+
+    #     # handles errors #
+    #     if len(full_list) > 20:
+    #         return ["", "Select 20 or fewer neurons to port to Graph App", ""]
+
+    #     # builds url using portUrl function #
+    #     out_url = portUrl(
+    #         str(full_list)[1:-1],
+    #         "graph",
+    #         str(cleft_thresh),
+    #         config,
+    #         timestamp=timestamp,
+    #     )
+
+    #     # returns url string, alters button text, sends empty string for loader #
+    #     return [out_url, "Send selected neurons to Graph App", ""]
+
     # defines callback that generates summary app link  #
     @app.callback(
         Output("summary_link_button", "href",),
@@ -856,11 +944,10 @@ def register_callbacks(app, config=None):
         State("outgoing_table", "data",),
         State({"type": "url_helper", "id_inner": "timestamp_field"}, "value"),
         State({"type": "url_helper", "id_inner": "cleft_thresh_field"}, "value"),
-        State({"type": "url_helper", "id_inner": "filter_list_field"}, "value"),
         prevent_initial_call=True,
     )
     def makeSumLink(
-        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh, filter_list
+        in_rows, out_rows, sum_data, in_data, out_data, timestamp, cleft_thresh
     ):
         """Create summary app link using selected IDs.
         
@@ -872,7 +959,6 @@ def register_callbacks(app, config=None):
         out_data -- outgoing table data (dataframe)
         timestamp -- utc timestamp as datetime or unix (str)
         cleft_thresh -- value of cleft threshold field (float)
-        filter_list -- list of root ids to filter results by (str)
         """
 
         # sets timestamp to current time if no input or converts string input to datetime #

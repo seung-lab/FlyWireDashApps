@@ -16,6 +16,7 @@ flywire_config = {
     "syn_position_column": "pre_pt",
     "con_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_connectivity/",
     "sum_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_summary/",
+    "graph_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_graph/",
     "part_app_base_url": "https://prod.flywire-daf.com/dash/datastack/flywire_fafb_production/apps/fly_partners/",
 }
 

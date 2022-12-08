@@ -118,6 +118,34 @@ def register_callbacks(app, config=None):
                             "vertical-align": "top",
                         },
                     ),
+                    # # defines Graph App link button loader #
+                    # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+                    # html.Div(
+                    #     dcc.Loading(
+                    #         id="graph_link_loader", type="default", children="",
+                    #     ),
+                    #     style={
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "width": "1000px",
+                    #     },
+                    # ),
+                    # # defines Graph App link generation button #
+                    # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+                    # dbc.Button(
+                    #     "Select Neuron to Port to Graph App",
+                    #     id="graph_link_button",
+                    #     n_clicks=0,
+                    #     target="_blank",
+                    #     style={
+                    #         "margin-top": "5px",
+                    #         "margin-right": "5px",
+                    #         "margin-left": "5px",
+                    #         "margin-bottom": "5px",
+                    #         "width": "420px",
+                    #         "vertical-align": "top",
+                    #     },
+                    # ),
                     # defines Partner App link button loader #
                     html.Div(
                         dcc.Loading(
@@ -370,6 +398,45 @@ def register_callbacks(app, config=None):
 
         # returns url string, alters button text, sends empty string for loader #
         return [out_url, "Send selected neuron to Connectivity App", ""]
+
+    # # defines callback that generates graph app link  #
+    # # COMMENTED OUT UNTIL DEPLOYED FOR TESTING #
+    # @app.callback(
+    #     Output("graph_link_button", "href",),
+    #     Output("graph_link_button", "children",),
+    #     Output("graph_link_loader", "children",),
+    #     Input("table", "selected_rows",),
+    #     State("table", "data",),
+    #     prevent_initial_call=True,
+    # )
+    # def makeGraphLink(rows, table_data):
+    #     """Create graph app link using selected IDs.
+
+    #     Keyword arguments:
+    #     rows -- selected upstream row indices (list)
+    #     table_data -- summary table data
+    #     """
+
+    #     # generates root list using table data and selected rows #
+    #     root_list = [table_data[x]["Root ID"] for x in rows]
+    #     bad_list = [table_data[x]["Current"] for x in rows]
+
+    #     # removes duplicates from list #
+    #     root_list = [*set(root_list)]
+
+    #     # handles errors #
+    #     if len(root_list) == 0:
+    #         return ["", "Select up to 20 neurons to port to Graph App", ""]
+    #     if len(root_list) > 20:
+    #         return ["", "Select no more than 20 neurons to send to Graph App", ""]
+    #     elif "BAD ID" in bad_list or False in bad_list:
+    #         return ["", "Select only current, valid neurons to send to Graph App", ""]
+
+    #     # builds url using portUrl function #
+    #     out_url = portUrl(str(root_list)[1:-1], "graph", config)
+
+    #     # returns url string, alters button text, sends empty string for loader #
+    #     return [out_url, "Send selected neurons to Graph App", ""]
 
     # defines callback that generates partner app link  #
     @app.callback(

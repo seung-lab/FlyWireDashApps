@@ -238,6 +238,8 @@ def getNuc(root_id, res, config={}):
 
 def getResolution():
     # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
+    # Issue is caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
+    # if ipv6 is switched on but no ipv6 connection exists, this code will try using ipv6 for ~84s before switching to ipv4 #
     # # sets cloud volume #
     # cv = cloudvolume.CloudVolume(
     #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
@@ -304,11 +306,11 @@ def inputToRootList(input_str, config={}):
     # if ids are roots #
     if all([len(i) == 18 for i in input_list]):
         root_list = [int(i) for i in input_list]
-
+    
     # if ids are nucs #
     elif all([len(i) == 7 for i in input_list]):
         root_list = [nucToRoot(int(i), config) for i in input_list]
-
+    
     # if id is coordinates #
     elif len(input_list) % 3 == 0:
         root_list = [coordsToRoot(input_list, config)]
@@ -387,6 +389,10 @@ def portUrl(input_ids, app_choice, config={}):
     if app_choice == "connectivity":
         base = config.get("con_app_base_url", None)
         query = "?input_field=" + input_ids + "&cleft_thresh_field=50"
+    # handles behavior for graph app port #
+    elif app_choice == "graph":
+        base = config.get("graph_app_base_url", None)
+        query = "?input_field=" + input_ids + "&cleft_thresh_field=50"
     # handles behavior for partner app port #
     elif app_choice == "partner":
         base = config.get("part_app_base_url", None)
@@ -408,10 +414,12 @@ def rootListToDataFrame(root_list, config={}):
     root list -- input root ids (list of ints)
     config -- config settings (dict, default {})
     """
+
     # sets client #
     client = lookup_utilities.make_client(
         config.get("datastack", None), config.get("server_address", None)
     )
+    
     # creates blank output dataframe #
     output_df = pd.DataFrame(
         columns=[
@@ -426,9 +434,11 @@ def rootListToDataFrame(root_list, config={}):
             "Current",
         ]
     )
-
+    
     # gets resolution of volume (important for nucleus coordinates)
     res = getResolution()
+    
+    import time
 
     # generates df row and adds to output df for each root id #
     for i in root_list:
@@ -437,7 +447,7 @@ def rootListToDataFrame(root_list, config={}):
         try:
             # sets freshness to T/F to check for outdated ids #
             freshness = checkFreshness(i, config)
-
+            
             # tries to make df using changelog #
             try:
                 change_df = pd.DataFrame(
@@ -478,6 +488,7 @@ def rootListToDataFrame(root_list, config={}):
             row_df["Cell Identification"] = types
             row_df["Current"] = freshness[0]
 
+
         # handles bad ids #
         except:
             row_df = pd.DataFrame(
@@ -496,6 +507,6 @@ def rootListToDataFrame(root_list, config={}):
             ).astype(str)
 
         # adds row to output df for the results of each id #
-        output_df = pd.concat([output_df, row_df])
+        output_df = pd.concat([output_df, row_df])    
 
     return output_df
