@@ -432,6 +432,7 @@ def getNuc(root_id, res, config={}, timestamp=None):
 
     Keyword arguments:
     root_id -- root or nucleus id formatted as int
+    res -- desired x,y,z resolution in nm/voxel, e.g. [16,16,40] (list of ints)
     config -- dictionary of config settings (default {})
     timestamp -- datetime format utc timestamp (default None)
     """
