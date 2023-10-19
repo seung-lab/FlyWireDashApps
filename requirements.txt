@@ -4,7 +4,6 @@ cloud-volume
 pandas
 plotly
 nglui
-annotationframeworkclient
 dash
 dash-bootstrap-components
 dash-cytoscape
