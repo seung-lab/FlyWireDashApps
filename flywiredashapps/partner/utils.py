@@ -60,17 +60,20 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
         timestamp=timestamp,
     )[0]
 
+    # sets volume resolution #
+    res = getResolution()
+
     # converts coordinates to 4,4,40 resolution #
     a_to_b_coords_df = pd.DataFrame(
         {
-            "pre": [nmToNG(x) for x in a_to_b_raw_df["pre_pt_position"]],
-            "post": [nmToNG(x) for x in a_to_b_raw_df["post_pt_position"]],
+            "pre": [nmToNG(x,res) for x in a_to_b_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x,res) for x in a_to_b_raw_df["post_pt_position"]],
         }
     )
     b_to_a_coords_df = pd.DataFrame(
         {
-            "pre": [nmToNG(x) for x in b_to_a_raw_df["pre_pt_position"]],
-            "post": [nmToNG(x) for x in b_to_a_raw_df["post_pt_position"]],
+            "pre": [nmToNG(x,res) for x in b_to_a_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x,res) for x in b_to_a_raw_df["post_pt_position"]],
         }
     )
 
@@ -180,8 +183,11 @@ def getNuc(root_id, config={}, timestamp=None):
         "nuclei_v1", filter_in_dict={"pt_root_id": [root_id]}, timestamp=timestamp,
     )
 
+    # sets volume resolution #
+    res = getResolution()
+
     # converts nucleus coordinates from n to 4x4x40 resolution #
-    nuc_df["pt_position"] = [nmToNG(i) for i in nuc_df["pt_position"]]
+    nuc_df["pt_position"] = [nmToNG(i,res) for i in nuc_df["pt_position"]]
 
     # creates output df using root, nuc id, and coords to keep aligned #
     out_df = pd.DataFrame(
@@ -373,6 +379,21 @@ def getSyn(
 
     return [syn_df, output_message]
 
+def getResolution():
+    # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
+    # Issue is caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
+    # if ipv6 is switched on but no ipv6 connection exists, this code will try using ipv6 for ~84s before switching to ipv4 #
+    # # sets cloud volume #
+    # cv = cloudvolume.CloudVolume(
+    #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+    #     use_https=True,
+    # )
+
+    # # determines resolution of volume (important for nucleus coords)#
+    # res = cv.resolution
+
+    # return res
+    return [16, 16, 40]
 
 def getTime():
     """Get current time in datetime.datetime format.
@@ -587,18 +608,22 @@ def makePartnerViolin(root_a, root_b, cleft_thresh, title, config={}, timestamp=
 
     return fig
 
-
-def nmToNG(coords):
-    """Convert 1,1,1 nm coordinates to 4,4,40 nm resolution.
+def nmToNG(coords, res):
+    """Convert 1,1,1 nm coordinates to desired resolution.
 
     Keyword arguments:
     coords -- x,y,z coordinates in 1,1,1 nm resolution (list of ints)
+    res -- desired x,y,z resolution in nm/voxel, e.g. [16,16,40] (list of ints)
     """
-    coords[0] /= 4
-    coords[1] /= 4
-    coords[2] /= 40
-    coords = [int(i) for i in coords]
-    return coords
+
+    # converts coordinates using volume resolution #
+    cv_xyz = [
+        int(coords[0] / (res[0])),
+        int(coords[1] / (res[1])),
+        int(coords[2] / (res[2])),
+    ]
+
+    return cv_xyz
 
 
 def nucToRoot(nuc_id, config={}, timestamp=None):
