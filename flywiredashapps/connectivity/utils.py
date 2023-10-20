@@ -1,18 +1,21 @@
+import calendar
 import cloudvolume
+import datetime
 from functools import lru_cache
-import pandas as pd
+from ipaddress import ip_address, IPv4Address
+import json
+from nglui.statebuilder import *
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import json
-import datetime
-import time
-import calendar
-import datetime
-from nglui.statebuilder import *
+import socket
 from ..common import lookup_utilities
 
-def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, filter_list=None):
+
+def buildAllsynLink(
+    query_id, cleft_thresh, nucleus, config={}, timestamp=None, filter_list=None
+):
     """Generate neuroglancer link with all synapses associated with queried neuron.
 
     Keyword arguments:
@@ -36,7 +39,10 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
     )
 
     # sets configuration for EM layer #
-    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+    img = ImageLayerConfig(
+        name="Production-image",
+        source=client.info.image_source(),
+    )
 
     # sets configuration for segmentation layer #
     seg = SegmentationLayerConfig(
@@ -111,17 +117,26 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
 
     # defines configuration for point & line annotations #
     points = PointMapper(point_column="pt_position")
-    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+    lines = LineMapper(
+        point_column_a="pre",
+        point_column_b="post",
+    )
 
     # defines configuration for annotation layers #
     up_anno = AnnotationLayerConfig(
-        name="Incoming Synapses", color="#FF8800", mapping_rules=lines,
+        name="Incoming Synapses",
+        color="#FF8800",
+        mapping_rules=lines,
     )
     down_anno = AnnotationLayerConfig(
-        name="Outgoing Synapses", color="#8800FF", mapping_rules=lines,
+        name="Outgoing Synapses",
+        color="#8800FF",
+        mapping_rules=lines,
     )
     nuc_anno = AnnotationLayerConfig(
-        name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
+        name="Nucleus Coordinates",
+        color="#FF0000",
+        mapping_rules=points,
     )
 
     # sets view to nucelus of query cell #
@@ -133,12 +148,19 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
         }
     except:
         view_options = {
-            "position": [119412, 62016, 3539,],
+            "position": [
+                119412,
+                62016,
+                3539,
+            ],
             "zoom_3d": 10000,
         }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
-    up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
+    up_sb = StateBuilder(
+        [img, seg, up_anno],
+        view_kws=view_options,
+    )
     down_sb = StateBuilder([down_anno])
     nuc_sb = StateBuilder([nuc_anno])
     chained_sb = ChainedStateBuilder([up_sb, down_sb, nuc_sb])
@@ -146,7 +168,8 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
     # render_state into non-dumped version using json.loads() #
     state_json = json.loads(
         chained_sb.render_state(
-            [up_coords_df, down_coords_df, nuc_coords_df], return_as="json",
+            [up_coords_df, down_coords_df, nuc_coords_df],
+            return_as="json",
         )
     )
 
@@ -155,7 +178,8 @@ def buildAllsynLink(query_id, cleft_thresh, nucleus, config={}, timestamp=None, 
 
     # defines url using builder, passing in the new_id and the ngl url #
     url = client.state.build_neuroglancer_url(
-        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+        state_id=new_id,
+        ngl_url="https://ngl.flywire.ai/",
     )
 
     return url
@@ -207,7 +231,11 @@ def buildLink(
     color_list = [query_color] + up_cols + down_cols
 
     # builds nuc coords df using root id list #
-    nuc_coords_df = rootsToNucCoords(id_list, config, timestamp=timestamp,)
+    nuc_coords_df = rootsToNucCoords(
+        id_list,
+        config,
+        timestamp=timestamp,
+    )
 
     # sets client using flywire production datastack #
     client = lookup_utilities.make_client(
@@ -215,7 +243,10 @@ def buildLink(
     )
 
     # sets configuration for EM layer #
-    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+    img = ImageLayerConfig(
+        name="Production-image",
+        source=client.info.image_source(),
+    )
 
     # sets configuration for segmentation layer #
     seg = SegmentationLayerConfig(
@@ -239,7 +270,10 @@ def buildLink(
                 server_address=config.get("server_address", None),
                 timestamp=timestamp,
             )[0]
-            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
+            up_syns_df = pd.concat(
+                [up_syns_df, row_df],
+                ignore_index=True,
+            )
         for x in down_ids:
             row_df = getSyn(
                 query_id[0],
@@ -249,7 +283,10 @@ def buildLink(
                 server_address=config.get("server_address", None),
                 timestamp=timestamp,
             )[0]
-            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
+            down_syns_df = pd.concat(
+                [down_syns_df, row_df],
+                ignore_index=True,
+            )
     elif up_ids == [] and down_ids != []:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
@@ -262,7 +299,10 @@ def buildLink(
                 server_address=config.get("server_address", None),
                 timestamp=timestamp,
             )[0]
-            down_syns_df = pd.concat([down_syns_df, row_df], ignore_index=True,)
+            down_syns_df = pd.concat(
+                [down_syns_df, row_df],
+                ignore_index=True,
+            )
     elif up_ids != [] and down_ids == []:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
@@ -275,7 +315,10 @@ def buildLink(
                 server_address=config.get("server_address", None),
                 timestamp=timestamp,
             )[0]
-            up_syns_df = pd.concat([up_syns_df, row_df], ignore_index=True,)
+            up_syns_df = pd.concat(
+                [up_syns_df, row_df],
+                ignore_index=True,
+            )
     else:
         up_syns_df = pd.DataFrame()
         down_syns_df = pd.DataFrame()
@@ -306,17 +349,26 @@ def buildLink(
 
     # defines configuration for point & line annotations #
     points = PointMapper(point_column="pt_position")
-    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+    lines = LineMapper(
+        point_column_a="pre",
+        point_column_b="post",
+    )
 
     # defines configuration for annotation layers #
     up_anno = AnnotationLayerConfig(
-        name="Incoming Synapses", color="#FF8800", mapping_rules=lines,
+        name="Incoming Synapses",
+        color="#FF8800",
+        mapping_rules=lines,
     )
     down_anno = AnnotationLayerConfig(
-        name="Outgoing Synapses", color="#8800FF", mapping_rules=lines,
+        name="Outgoing Synapses",
+        color="#8800FF",
+        mapping_rules=lines,
     )
     nuc_anno = AnnotationLayerConfig(
-        name="Nucleus Coordinates", color="#FF0000", mapping_rules=points,
+        name="Nucleus Coordinates",
+        color="#FF0000",
+        mapping_rules=points,
     )
 
     # sets view to nucelus of query cell #
@@ -328,12 +380,19 @@ def buildLink(
         }
     except:
         view_options = {
-            "position": [119412, 62016, 3539,],
+            "position": [
+                119412,
+                62016,
+                3539,
+            ],
             "zoom_3d": 10000,
         }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
-    up_sb = StateBuilder([img, seg, up_anno], view_kws=view_options,)
+    up_sb = StateBuilder(
+        [img, seg, up_anno],
+        view_kws=view_options,
+    )
     down_sb = StateBuilder([down_anno])
     nuc_sb = StateBuilder([nuc_anno])
     chained_sb = ChainedStateBuilder([up_sb, down_sb, nuc_sb])
@@ -341,7 +400,8 @@ def buildLink(
     # render_state into non-dumped version using json.loads() #
     state_json = json.loads(
         chained_sb.render_state(
-            [up_coords_df, down_coords_df, nuc_coords_df], return_as="json",
+            [up_coords_df, down_coords_df, nuc_coords_df],
+            return_as="json",
         )
     )
 
@@ -350,7 +410,8 @@ def buildLink(
 
     # defines url using builder, passing in the new_id and the ngl url #
     url = client.state.build_neuroglancer_url(
-        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+        state_id=new_id,
+        ngl_url="https://ngl.flywire.ai/",
     )
 
     return url
@@ -358,7 +419,7 @@ def buildLink(
 
 def checkFreshness(root_id, config={}, timestamp=None):
     """Check to see if root id is outdated.
-    
+
     Keyword arguments:
     root_id -- 18-digit int-format root id number
     config -- dictionary of config settings (default {})
@@ -367,11 +428,15 @@ def checkFreshness(root_id, config={}, timestamp=None):
 
     # sets client #
     client = lookup_utilities.make_client(
-        config.get("datastack", None), config.get("server_address", None),
+        config.get("datastack", None),
+        config.get("server_address", None),
     )
 
     # returns True if root id is current, False if not #
-    return client.chunkedgraph.is_latest_roots(root_id, timestamp=timestamp,)
+    return client.chunkedgraph.is_latest_roots(
+        root_id,
+        timestamp=timestamp,
+    )
 
 
 def coordsToRoot(coords, config={}, timestamp=None):
@@ -408,11 +473,19 @@ def coordsToRoot(coords, config={}, timestamp=None):
     ]
 
     # sets point by passing converted coords to 'download_point' method #
-    point = int(cv.download_point(cv_xyz, size=1,))
+    point = int(
+        cv.download_point(
+            cv_xyz,
+            size=1,
+        )
+    )
 
     # looks up sv's associated root id, converts to string #
     root_result = str(
-        client.chunkedgraph.get_root_id(supervoxel_id=point, timestamp=timestamp,)
+        client.chunkedgraph.get_root_id(
+            supervoxel_id=point,
+            timestamp=timestamp,
+        )
     )
 
     return root_result
@@ -420,7 +493,7 @@ def coordsToRoot(coords, config={}, timestamp=None):
 
 def datetimeToUnix(stamp):
     """Convert datetime object to unix timestamp.
-    
+
     Keyword Arguments:
     stamp -- datetime object timestamp
     """
@@ -444,7 +517,9 @@ def getNuc(root_id, res, config={}, timestamp=None):
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"pt_root_id": [root_id]}, timestamp=timestamp,
+        "nuclei_v1",
+        filter_in_dict={"pt_root_id": [root_id]},
+        timestamp=timestamp,
     )
 
     # handles roots with multiple nuclei #
@@ -474,21 +549,30 @@ def getNuc(root_id, res, config={}, timestamp=None):
 
 
 def getResolution():
-    # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
-    # Issue is caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
-    # if ipv6 is switched on but no ipv6 connection exists, this code will try using ipv6 for ~84s before switching to ipv4 #
-    # # sets cloud volume #
-    # cv = cloudvolume.CloudVolume(
-    #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
-    #     use_https=True,
-    # )
+    """Get the resolution of the data volume."""
 
-    # # determines resolution of volume (important for nucleus coords)#
-    # res = cv.resolution
+    # There's an issue caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
+    # If IPv6 is switched on but no IPv6 connection exists, "get_file" will try using IPv6 for ~84s before switching to IPv4 #
 
-    # return res
-    return [16, 16, 40]
+    # detects whether IPv is 4 or 6 to avoid slowdown bug #
+    IPv = IPv4or6()
 
+    # If IPv6, runs automatic resolution detection #
+    if IPv == "IPv6":
+        # sets cloud volume #
+        cv = cloudvolume.CloudVolume(
+            "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+            use_https=True,
+        )
+
+        # determines resolution of volume (important for nucleus coords)#
+        res = cv.resolution
+
+        return res
+
+    # If IPv4 or Invalid result, defaults to hardcoded resolution #
+    else:
+        return [16, 16, 40]
 
 
 @lru_cache(maxsize=None)
@@ -517,7 +601,6 @@ def getSyn(
     client = lookup_utilities.make_client(datastack_name, server_address)
 
     if post_root == 0:
-
         # TEMPORARILY DISABLED JOIN QUERY #
         # syn_df = client.materialize.join_query(
         #     [["synapses_nt_v1", "id"], ["fly_synapses_neuropil", "id"],],
@@ -861,14 +944,12 @@ def getSynNoCache(
 
 
 def getTime():
-    """Get current time in datetime.datetime format.
-    """
+    """Get current time in datetime.datetime format."""
     return datetime.datetime.utcnow().replace(microsecond=0)
 
 
 def getUnixTime():
-    """Get current time in unix format.
-    """
+    """Get current time in unix format."""
     return calendar.timegm(getTime().utctimetuple())
 
 
@@ -912,6 +993,18 @@ def idConvert(id_val, config, timestamp=None):
             return "invalid root id"
     else:
         return 0
+
+
+def IPv4or6():
+    """Detect whether user's IP address is IPV4 or IPV6."""
+
+    hostname = socket.gethostname()
+    IPAddr = socket.gethostbyname(hostname)
+
+    try:
+        return "IPv4" if type(ip_address(IPAddr)) is IPv4Address else "IPv6"
+    except ValueError:
+        return "Invalid"
 
 
 def makePartnerDataFrame(
@@ -967,7 +1060,16 @@ def makePartnerDataFrame(
 
     # drops all nonessential columns #
     nt_df = raw_nt_df.filter(
-        [column_name, "gaba", "ach", "glut", "oct", "ser", "da",], axis=1,
+        [
+            column_name,
+            "gaba",
+            "ach",
+            "glut",
+            "oct",
+            "ser",
+            "da",
+        ],
+        axis=1,
     )
 
     # renames columns #
@@ -988,12 +1090,18 @@ def makePartnerDataFrame(
     nt_df = nt_df.round(3)
 
     # adds neurotransmitter averages for each partner to partner df #
-    partner_df = partner_df.join(nt_df.set_index(title_name), on=title_name,)
+    partner_df = partner_df.join(
+        nt_df.set_index(title_name),
+        on=title_name,
+    )
 
     # sorts by number of synapses and resets index #
     partner_df = (
         partner_df.astype({"Synapses": int})
-        .sort_values(by="Synapses", ascending=False,)
+        .sort_values(
+            by="Synapses",
+            ascending=False,
+        )
         .reset_index(drop=True)
     )
 
@@ -1172,12 +1280,20 @@ def makePie(
 
     # adds text labels inside pie chart slices #
     region_pie.update_traces(
-        textposition="inside", textinfo="label",
+        textposition="inside",
+        textinfo="label",
     )
 
     # formats size of chart to match NTs #
     region_pie.update_layout(
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,}, width=400, height=200,
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
+        width=400,
+        height=200,
     )
 
     return region_pie
@@ -1220,14 +1336,23 @@ def makeSummaryDataFrame(
     res = getResolution()
 
     # makes df of query nucleus, upstream and downstream synapses #
-    nuc_df = getNuc(root_id, res, config=config, timestamp=timestamp,)
+    nuc_df = getNuc(
+        root_id,
+        res,
+        config=config,
+        timestamp=timestamp,
+    )
     up_df = up_query[0]
     down_df = down_query[0]
 
     # exception handling for segments without nuclei #
     if nuc_df.empty:
         nuc_df = pd.DataFrame(
-            {"Root ID": root_id, "Nuc ID": "n/a", "Nucleus Coordinates": "n/a",},
+            {
+                "Root ID": root_id,
+                "Nuc ID": "n/a",
+                "Nucleus Coordinates": "n/a",
+            },
             index=[0],
         ).astype(str)
 
@@ -1318,12 +1443,42 @@ def makeViolin(
     fig = go.Figure()
 
     # adds line data #
-    fig.add_trace(go.Violin(y=list(query_df["gaba"]), name="Gaba",))
-    fig.add_trace(go.Violin(y=list(query_df["ach"]), name="Ach",))
-    fig.add_trace(go.Violin(y=list(query_df["glut"]), name="Glut",))
-    fig.add_trace(go.Violin(y=list(query_df["oct"]), name="Oct",))
-    fig.add_trace(go.Violin(y=list(query_df["ser"]), name="Ser",))
-    fig.add_trace(go.Violin(y=list(query_df["da"]), name="Da",))
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["gaba"]),
+            name="Gaba",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ach"]),
+            name="Ach",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["glut"]),
+            name="Glut",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["oct"]),
+            name="Oct",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ser"]),
+            name="Ser",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["da"]),
+            name="Da",
+        )
+    )
 
     # hides points #
     fig.update_traces(points=False)
@@ -1331,7 +1486,12 @@ def makeViolin(
     # fixes layout to minimize padding and fit two on one line #
     fig.update_layout(
         title=title_name,
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,},
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
         width=400,
         height=200,
     )
@@ -1341,7 +1501,7 @@ def makeViolin(
 
 def markdownToInt(root_list):
     """Convert markdown synatx back into int root ids.
-    
+
     Keyword Arguments:
     root_list -- list of root ids, may be mixed markdown and non-markdown
     """
@@ -1391,7 +1551,9 @@ def nucToRoot(nuc_id, config={}, timestamp=None):
 
     # mat_vers = max(client.materialize.get_versions())
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"id": [nuc_id]}, timestamp=timestamp,
+        "nuclei_v1",
+        filter_in_dict={"id": [nuc_id]},
+        timestamp=timestamp,
     )
 
     # if no root id is found, return 0 #
@@ -1483,9 +1645,8 @@ def refeedLink(root_id, config={}):
 
 
 def rootsToNucCoords(roots, config={}, timestamp=None):
-
     """Convert list of root ids to one-column df of nucleus coordinates.
-    
+
     Keyword Arguments:
     roots -- root ids (list of markdown format strings)
     config -- config settings (dict, default {})
@@ -1501,10 +1662,12 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"pt_root_id": roots}, timestamp=timestamp,
+        "nuclei_v1",
+        filter_in_dict={"pt_root_id": roots},
+        timestamp=timestamp,
     )
 
-    #sets volume resolution #
+    # sets volume resolution #
     res = getResolution()
 
     # converts nucleus coordinates from nm to volume resolution #
@@ -1517,7 +1680,7 @@ def rootsToNucCoords(roots, config={}, timestamp=None):
 
 def strToDatetime(string_timestamp):
     """Convert string timestamp to datetime object.
-    
+
     Keyword Arguments:
     string_timestamp -- timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC (str)
     """
@@ -1547,9 +1710,8 @@ def strToDatetime(string_timestamp):
 
 def unixToDatetime(stamp):
     """Convert unix timestamp to datetime object.
-    
+
     Keyword Arguments:
     stamp -- unix timestamp
     """
     return datetime.datetime.fromtimestamp(stamp)
-

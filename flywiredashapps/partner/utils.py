@@ -1,18 +1,21 @@
-from ..common import lookup_utilities
-import datetime
 import calendar
+import cloudvolume
+import datetime
+from functools import lru_cache
+from ipaddress import ip_address, IPv4Address
 import json
-import pandas as pd
-import numpy as np
 from nglui.statebuilder import *
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from functools import lru_cache
+import socket
+from ..common import lookup_utilities
 
 
 def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
     """Generate NG link.
-    
+
     Keyword arguments:
     id_a -- root id of input a (str)
     id_b -- root id of input b (str)
@@ -31,7 +34,10 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
     )
 
     # sets configuration for EM layer #
-    img = ImageLayerConfig(name="Production-image", source=client.info.image_source(),)
+    img = ImageLayerConfig(
+        name="Production-image",
+        source=client.info.image_source(),
+    )
 
     # # makes df of int-converted nucleus coords from list #
     fixed_nuc = []
@@ -66,14 +72,14 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
     # converts coordinates to 4,4,40 resolution #
     a_to_b_coords_df = pd.DataFrame(
         {
-            "pre": [nmToNG(x,res) for x in a_to_b_raw_df["pre_pt_position"]],
-            "post": [nmToNG(x,res) for x in a_to_b_raw_df["post_pt_position"]],
+            "pre": [nmToNG(x, res) for x in a_to_b_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x, res) for x in a_to_b_raw_df["post_pt_position"]],
         }
     )
     b_to_a_coords_df = pd.DataFrame(
         {
-            "pre": [nmToNG(x,res) for x in b_to_a_raw_df["pre_pt_position"]],
-            "post": [nmToNG(x,res) for x in b_to_a_raw_df["post_pt_position"]],
+            "pre": [nmToNG(x, res) for x in b_to_a_raw_df["pre_pt_position"]],
+            "post": [nmToNG(x, res) for x in b_to_a_raw_df["post_pt_position"]],
         }
     )
 
@@ -88,17 +94,26 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
 
     # sets point and line mapping rules #
     points = PointMapper(point_column="pt_position")
-    lines = LineMapper(point_column_a="pre", point_column_b="post",)
+    lines = LineMapper(
+        point_column_a="pre",
+        point_column_b="post",
+    )
 
     # sets annotation layers #
     nuc_annos = AnnotationLayerConfig(
-        name="Nucleus Coordinates", color="#FFFF00", mapping_rules=points,
+        name="Nucleus Coordinates",
+        color="#FFFF00",
+        mapping_rules=points,
     )
     a_to_b_annos = AnnotationLayerConfig(
-        name="A>B Synapses", color="#FF0000", mapping_rules=lines,
+        name="A>B Synapses",
+        color="#FF0000",
+        mapping_rules=lines,
     )
     b_to_a_annos = AnnotationLayerConfig(
-        name="B>A Synapses", color="#00FFFF", mapping_rules=lines,
+        name="B>A Synapses",
+        color="#00FFFF",
+        mapping_rules=lines,
     )
 
     # sets default view #
@@ -109,12 +124,19 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
         }
     except:
         view_options = {
-            "position": [119412, 62016, 3539,],
+            "position": [
+                119412,
+                62016,
+                3539,
+            ],
             "zoom_3d": 10000,
         }
 
     # defines 'sb' by passing in rules for img, seg, and anno layers #
-    core_sb = StateBuilder([img, seg, nuc_annos], view_kws=view_options,)
+    core_sb = StateBuilder(
+        [img, seg, nuc_annos],
+        view_kws=view_options,
+    )
     a_to_b_sb = StateBuilder([a_to_b_annos])
     b_to_a_sb = StateBuilder([b_to_a_annos])
     chained_sb = ChainedStateBuilder([core_sb, a_to_b_sb, b_to_a_sb])
@@ -122,7 +144,8 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
     # render_state into non-dumped version using json.loads() #
     state_json = json.loads(
         chained_sb.render_state(
-            [nuc_coords_df, a_to_b_coords_df, b_to_a_coords_df], return_as="json",
+            [nuc_coords_df, a_to_b_coords_df, b_to_a_coords_df],
+            return_as="json",
         )
     )
 
@@ -131,7 +154,8 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
 
     # defines url using builder, passing in the new_id and the ngl url #
     url = client.state.build_neuroglancer_url(
-        state_id=new_id, ngl_url="https://ngl.flywire.ai/",
+        state_id=new_id,
+        ngl_url="https://ngl.flywire.ai/",
     )
 
     return url
@@ -139,7 +163,7 @@ def buildPartnerLink(id_a, id_b, cleft, nuc, config={}, timestamp=None):
 
 def checkFreshness(root_id, config={}, timestamp=None):
     """Check to see if root id is outdated.
-    
+
     Keyword arguments:
     root_id -- 18-digit root id number (int)
     config -- config settings (dict, default {})
@@ -157,7 +181,7 @@ def checkFreshness(root_id, config={}, timestamp=None):
 
 def datetimeToUnix(stamp):
     """Convert datetime.datetime format timestamp to unix.
-    
+
     Keyword Arguments:
     stamp -- timestamp (datetime object)
     """
@@ -180,14 +204,16 @@ def getNuc(root_id, config={}, timestamp=None):
 
     # queries nucleus table using root id #
     nuc_df = client.materialize.query_table(
-        "nuclei_v1", filter_in_dict={"pt_root_id": [root_id]}, timestamp=timestamp,
+        "nuclei_v1",
+        filter_in_dict={"pt_root_id": [root_id]},
+        timestamp=timestamp,
     )
 
     # sets volume resolution #
     res = getResolution()
 
     # converts nucleus coordinates from n to 4x4x40 resolution #
-    nuc_df["pt_position"] = [nmToNG(i,res) for i in nuc_df["pt_position"]]
+    nuc_df["pt_position"] = [nmToNG(i, res) for i in nuc_df["pt_position"]]
 
     # creates output df using root, nuc id, and coords to keep aligned #
     out_df = pd.DataFrame(
@@ -379,26 +405,49 @@ def getSyn(
 
     return [syn_df, output_message]
 
+
 def getResolution():
-    # TEMPORARILY DISABLED DUE TO SLOW LOAD TIME #
-    # Issue is caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
-    # if ipv6 is switched on but no ipv6 connection exists, this code will try using ipv6 for ~84s before switching to ipv4 #
-    # # sets cloud volume #
-    # cv = cloudvolume.CloudVolume(
-    #     "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
-    #     use_https=True,
-    # )
+    """Get the resolution of the data volume."""
 
-    # # determines resolution of volume (important for nucleus coords)#
-    # res = cv.resolution
+    # There's an issue caused by "resp = requests.get(key)" in "get_file" from "interfaces.py" in "cloud-files" module of "cloud-volume" #
+    # If IPv6 is switched on but no IPv6 connection exists, "get_file" will try using IPv6 for ~84s before switching to IPv4 #
 
-    # return res
-    return [16, 16, 40]
+    # detects whether IPv is 4 or 6 to avoid slowdown bug #
+    IPv = IPv4or6()
+
+    # If IPv6, runs automatic resolution detection #
+    if IPv == "IPv6":
+        # sets cloud volume #
+        cv = cloudvolume.CloudVolume(
+            "graphene://https://prod.flywire-daf.com/segmentation/1.0/fly_v31",
+            use_https=True,
+        )
+
+        # determines resolution of volume (important for nucleus coords)#
+        res = cv.resolution
+
+        return res
+
+    # If IPv4 or Invalid result, defaults to hardcoded resolution #
+    else:
+        return [16, 16, 40]
+
 
 def getTime():
-    """Get current time in datetime.datetime format.
-    """
+    """Get current time in datetime.datetime format."""
     return datetime.datetime.utcnow().replace(microsecond=0)
+
+
+def IPv4or6():
+    """Detect whether user's IP address is IPV4 or IPV6."""
+
+    hostname = socket.gethostname()
+    IPAddr = socket.gethostbyname(hostname)
+
+    try:
+        return "IPv4" if type(ip_address(IPAddr)) is IPv4Address else "IPv6"
+    except ValueError:
+        return "Invalid"
 
 
 def makePartnerPie(root_a, root_b, cleft_thresh, title, config={}, timestamp=None):
@@ -551,12 +600,20 @@ def makePartnerPie(root_a, root_b, cleft_thresh, title, config={}, timestamp=Non
 
     # adds text labels inside pie chart slices #
     region_pie.update_traces(
-        textposition="inside", textinfo="label",
+        textposition="inside",
+        textinfo="label",
     )
 
     # formats size of chart to match NTs #
     region_pie.update_layout(
-        margin={"l": 5, "r": 5, "t": 25, "b": 5,}, width=400, height=200,
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
+        width=400,
+        height=200,
     )
 
     return region_pie
@@ -591,22 +648,61 @@ def makePartnerViolin(root_a, root_b, cleft_thresh, title, config={}, timestamp=
     fig = go.Figure()
 
     # adds line data #
-    fig.add_trace(go.Violin(y=list(query_df["gaba"]), name="Gaba",))
-    fig.add_trace(go.Violin(y=list(query_df["ach"]), name="Ach",))
-    fig.add_trace(go.Violin(y=list(query_df["glut"]), name="Glut",))
-    fig.add_trace(go.Violin(y=list(query_df["oct"]), name="Oct",))
-    fig.add_trace(go.Violin(y=list(query_df["ser"]), name="Ser",))
-    fig.add_trace(go.Violin(y=list(query_df["da"]), name="Da",))
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["gaba"]),
+            name="Gaba",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ach"]),
+            name="Ach",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["glut"]),
+            name="Glut",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["oct"]),
+            name="Oct",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["ser"]),
+            name="Ser",
+        )
+    )
+    fig.add_trace(
+        go.Violin(
+            y=list(query_df["da"]),
+            name="Da",
+        )
+    )
 
     # hides points #
     fig.update_traces(points=False)
 
     # fixes layout to minimize padding and fit two on one line #
     fig.update_layout(
-        title=title, margin={"l": 5, "r": 5, "t": 25, "b": 5,}, width=400, height=200,
+        title=title,
+        margin={
+            "l": 5,
+            "r": 5,
+            "t": 25,
+            "b": 5,
+        },
+        width=400,
+        height=200,
     )
 
     return fig
+
 
 def nmToNG(coords, res):
     """Convert 1,1,1 nm coordinates to desired resolution.
@@ -687,7 +783,7 @@ def portUrl(input_ids, app_choice, cleft_thresh, config={}, timestamp=None):
 
 def strToDatetime(string_timestamp):
     """Convert string timestamp to dateime.datetime.
-    
+
     Keyword Arguments:
     string_timestamp -- timestamp as %Y-%m-%d %H:%M:%S e.g. 2022-07-04 17:43:06 or unix UTC (str)
     """
@@ -717,7 +813,7 @@ def strToDatetime(string_timestamp):
 
 def stringToIntCoords(string_coords):
     """Convert coordinate string to list of integers.
-    
+
     Keyword arguments:
     string_coords -- x,y,z coordinates with brackets (str)
     """
@@ -729,7 +825,7 @@ def stringToIntCoords(string_coords):
 
 def unixToDatetime(stamp):
     """Convert unix format timestamp to datetime.datetime.
-    
+
     Keyword Arguments:
     stamp -- unix format timestamp
     """
